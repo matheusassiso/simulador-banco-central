@@ -422,6 +422,29 @@ footer .wrap{padding-block:16px}
   </div>
 </section>
 
+<section class="band-sec" id="ranking">
+  <div class="wrap">
+    <div class="sec-head"><h2>Ranking</h2><span class="label" id="rkMode">—</span></div>
+    <p class="intro">Termine o mandato e envie sua partida. O ranking reexecuta o seu registro de decisões e mostra a pontuação verificada, então não dá para inventar nota.</p>
+    <div class="share">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div id="rkAuth" hidden>
+          <div id="rkIn" class="row" style="align-items:stretch"><input id="rkEmail" type="email" placeholder="seu@email.com" autocomplete="email" style="flex:2;padding:8px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper)"><button class="btn" id="rkLogin">Entrar por link</button></div>
+          <div id="rkOut" class="row" hidden><span class="hint" style="flex:2;align-self:center">Conectado: <b id="rkWho"></b></span><button class="btn" id="rkLogout">Sair</button></div>
+        </div>
+        <label class="label" for="rkNick">Apelido no ranking</label>
+        <input id="rkNick" maxlength="24" placeholder="Seu apelido" style="padding:8px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper)">
+        <button class="btn primary" id="rkSubmit">Enviar esta partida</button>
+        <p class="hint">Só partidas com o mandato concluído. Reenviar o mesmo código substitui o registro anterior.</p>
+      </div>
+      <div class="card">
+        <div class="row" style="align-items:center;margin-bottom:8px"><label class="check" style="flex:2"><input type="checkbox" id="rkAll"><span>Mostrar todos os códigos</span></label><button class="btn" id="rkRefresh" style="flex:none">Atualizar</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Jogador</th><th>Código</th><th>Pontos</th><th>Meses</th></tr></thead><tbody id="rkBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="band-sec">
   <div class="wrap">
     <div class="sec-head"><h2>Diário de bordo</h2><span class="label" id="logCount">—</span></div>
@@ -823,7 +846,7 @@ function advance(){
   if(!st||st.over){stopAuto();return;}
   const d=currentDecision();st.dec.push(S.packDec(d));S.step(st,d);pend={g:null,gov:[]};
   $('rate').value=st.i;render();
-  if(st.over)stopAuto();
+  if(st.over){stopAuto();window.dispatchEvent(new Event('bcsim-over'));}
 }
 function startAuto(){if(timer||!st||st.over)return;timer=setInterval(advance,$('oFast').checked?220:600);$('btnAuto').textContent='❚❚ Pausar';$('btnAuto').classList.add('on');}
 function stopAuto(){if(timer){clearInterval(timer);timer=null;}$('btnAuto').textContent='▶ Rodar automático';$('btnAuto').classList.remove('on');}
@@ -1014,8 +1037,11 @@ new MutationObserver(redraw).observe(document.documentElement,{attributes:true,a
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
 
 const m0=pref('bcsim-mode')==='CL'?'CL':'BR';
+window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg)};
 start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:true,supply:true,seed:randSeed(),endless:false});
 })();
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="platform.js"></script>
 </body></html>

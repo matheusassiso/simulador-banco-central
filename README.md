@@ -10,3 +10,13 @@ Duas modalidades, alternáveis no topo:
 Em comum: juros e balanço (QE/QT) com defasagem, credibilidade e expectativas, fragilidade financeira, forward guidance, pilotos automáticos (Taylor, PIB nominal), choques de governo, monitores de nível, pontuação, códigos de partida e exportação do registro de decisões.
 
 Modelo didático; parâmetros aproximados, não é previsão.
+
+## Ranking e contas
+
+Seção "Ranking" no fim da página. Sem configuração, o ranking fica só no navegador. Para ligar o online:
+
+1. Crie um projeto no Supabase e rode `supabase/schema.sql` no SQL Editor.
+2. Ative Authentication > Email (login por link).
+3. Preencha `url` e `anonKey` em `config.js` (a anon key é pública; a segurança vem das regras RLS).
+
+O ranking reexecuta o registro de decisões de cada partida e mostra a pontuação verificada, não a declarada.
