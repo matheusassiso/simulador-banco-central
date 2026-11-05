@@ -1,0 +1,1021 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulador do Banco Central</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral+SC:wght@500;600&display=swap">
+<style>
+/* Layout: cabeçalho em gravura de cédula; abaixo, painel de gráficos à esquerda e mesa de política fixa à direita; monitores e mercados em faixas abaixo. */
+:root{
+  --paper:#edf1ec; --surface:#f8faf6; --sunk:#e3e9e3; --ink:#15211d; --muted:#57665e; --rule:#c9d3cb;
+  --accent:#1d6a4c; --accent-ink:#f4faf6; --accent-2:#2b4e86; --gold:#9c7a22;
+  --s-inf:#b2443a; --s-exp:#9c7a22; --s-u:#2b4e86; --s-r:#1d6a4c; --s-ref:#7f8c85; --s-4:#7a4a9a;
+  --good:#2b7a4b; --warn:#a96e10; --bad:#b0372d;
+  --band:rgba(156,122,34,.13); --guil:rgba(29,106,76,.20);
+  --f-display:"Spectral SC", "Iowan Old Style", Georgia, serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0d1412; --surface:#141d1a; --sunk:#0a100e; --ink:#e1e9e4; --muted:#93a39a; --rule:#2a3732;
+  --accent:#5cbd8f; --accent-ink:#06130d; --accent-2:#8fb0e6; --gold:#d4ae55;
+  --s-inf:#ee7d70; --s-exp:#d4ae55; --s-u:#8fb0e6; --s-r:#5cbd8f; --s-ref:#6d7c74; --s-4:#c39be0;
+  --good:#5cbd86; --warn:#e3a64b; --bad:#f07664;
+  --band:rgba(212,174,85,.14); --guil:rgba(92,189,143,.16); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#0d1412; --surface:#141d1a; --sunk:#0a100e; --ink:#e1e9e4; --muted:#93a39a; --rule:#2a3732;
+  --accent:#5cbd8f; --accent-ink:#06130d; --accent-2:#8fb0e6; --gold:#d4ae55;
+  --s-inf:#ee7d70; --s-exp:#d4ae55; --s-u:#8fb0e6; --s-r:#5cbd8f; --s-ref:#6d7c74; --s-4:#c39be0;
+  --good:#5cbd86; --warn:#e3a64b; --bad:#f07664;
+  --band:rgba(212,174,85,.14); --guil:rgba(92,189,143,.16); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0}
+h2{font-size:1.15rem;letter-spacing:.02em}
+h3{font-size:.95rem;letter-spacing:.02em}
+.num,.mono{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.label{font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+
+/* Masthead */
+.mast{position:relative;overflow:hidden;border-bottom:1px solid var(--rule);background:var(--surface)}
+.mast canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.mast .wrap{position:relative;padding-block:22px 18px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+.mast h1{font-size:clamp(1.7rem,4.2vw,2.7rem);line-height:1.05;letter-spacing:.01em}
+.mast .eyebrow{font-family:var(--f-data);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.mast p{margin:8px 0 0;color:var(--muted);max-width:56ch}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:999px;background:var(--paper);padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:999px;cursor:pointer;font-weight:500;font-size:.85rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* Status strip */
+.status{border-bottom:1px solid var(--rule);background:var(--paper)}
+.status .wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;padding-block:0}
+.cell{padding:12px 14px 12px 0;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cell .v{font-family:var(--f-data);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.bar{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:500}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+
+.banner{margin-top:14px;border:1px solid var(--rule);border-left:4px solid var(--gold);background:var(--surface);padding:12px 14px;border-radius:var(--r);display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.banner strong{font-family:var(--f-display);font-size:1.05rem}
+
+/* Main layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding-block:20px;align-items:start}
+.desk{position:sticky;top:12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:980px){.layout{grid-template-columns:1fr}.desk{position:static;max-height:none;order:-1}}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.sec-head .label{font-size:.7rem}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:12px 12px 8px;min-width:0}
+.card h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card h3 .num{font-family:var(--f-data);font-size:1rem;font-weight:500}
+.card canvas{display:block;width:100%;height:170px;margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.74rem;color:var(--muted);margin-top:4px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid currentColor}
+.legend i.d{border-top-style:dashed}
+.legend i.dot{width:6px;height:6px;border:0;border-radius:50%;background:currentColor}
+.legend i.blk{width:12px;height:8px;border:0;background:var(--band)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 14px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule)}
+.stats div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stats b{font-family:var(--f-data);font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums}
+.stats small{color:var(--muted);font-size:.7rem}
+
+/* Desk */
+.desk h2{display:flex;justify-content:space-between;align-items:baseline}
+.copom{font-size:.78rem;border:1px solid var(--rule);border-radius:var(--r);padding:8px 10px;background:var(--paper);display:flex;justify-content:space-between;gap:8px}
+.copom.open{border-color:var(--accent);color:var(--accent)}
+.rate{display:flex;align-items:center;gap:10px}
+.rate .big{font-family:var(--f-data);font-size:2.1rem;font-weight:500;flex:1;text-align:center;font-variant-numeric:tabular-nums}
+.step{width:40px;height:40px;border-radius:50%;border:1px solid var(--rule);background:var(--paper);font-size:1.2rem;cursor:pointer}
+.step:disabled{opacity:.4;cursor:not-allowed}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=range]:disabled{opacity:.45}
+.ticks{display:flex;justify-content:space-between;font-family:var(--f-data);font-size:.68rem;color:var(--muted)}
+.hint{font-size:.74rem;color:var(--muted);margin:2px 0 0}
+.btn{border:1px solid var(--rule);background:var(--paper);padding:9px 12px;border-radius:var(--r);cursor:pointer;font-weight:500;font-size:.85rem}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:.95rem;padding:11px 14px}
+.btn.on{border-color:var(--accent);color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>.btn{flex:1}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;line-height:1.35;cursor:pointer}
+.check input{margin-top:2px;accent-color:var(--accent);flex:none}
+.check b{font-weight:600}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+legend{padding:0;margin-bottom:4px}
+select{width:100%;padding:7px 8px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);font-size:.82rem}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini div{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:7px 9px;display:flex;flex-direction:column}
+.mini b{font-family:var(--f-data);font-weight:500;font-size:1rem;font-variant-numeric:tabular-nums}
+.meter{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--good),var(--warn) 60%,var(--bad));position:relative;margin-top:6px}
+.meter i{position:absolute;top:-3px;width:3px;height:14px;background:var(--ink);border-radius:1px;transform:translateX(-50%)}
+details>summary{cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:.95rem;list-style-position:outside}
+details[open]>summary{margin-bottom:10px}
+hr.sep{border:0;border-top:1px solid var(--rule);margin:0}
+
+/* Bands */
+.band-sec{padding-block:8px 24px}
+.band-sec>.wrap>h2{margin-bottom:4px}
+.band-sec .intro{color:var(--muted);margin:0 0 14px;max-width:70ch;font-size:.88rem}
+.gov{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.gov button{text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:var(--r);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.gov button:hover{border-color:var(--muted)}
+.gov button b{font-weight:600}
+.gov button span{font-size:.8rem;color:var(--muted)}
+.gov button em{font-style:normal;font-size:.72rem;font-family:var(--f-data);color:var(--gold)}
+.gov button:disabled{opacity:.5;cursor:not-allowed}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:14px;font-size:.82rem;color:var(--muted)}
+.facts b{color:var(--ink);font-family:var(--f-data);font-weight:500}
+.decomp{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.decomp div{display:grid;grid-template-columns:96px 1fr 52px;gap:8px;align-items:center;font-size:.76rem}
+.decomp .track{height:10px;background:var(--sunk);position:relative;border-radius:2px}
+.decomp .track::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px solid var(--muted)}
+.decomp .track i{position:absolute;top:0;bottom:0;border-radius:2px}
+.share{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.share{grid-template-columns:1fr}}
+.code{font-family:var(--f-data);font-size:1.05rem;padding:8px 10px;background:var(--paper);border:1px dashed var(--rule);border-radius:var(--r);word-break:break-all;flex:1}
+textarea{width:100%;min-height:96px;font-family:var(--f-data);font-size:.75rem;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper);color:var(--ink);padding:8px;resize:vertical}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.82rem}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:500;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+tr.you td{font-weight:600}
+.log{list-style:none;margin:0;padding:0;max-height:380px;overflow:auto;border:1px solid var(--rule);border-radius:var(--r);background:var(--surface)}
+.log li{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:8px 12px;border-bottom:1px solid var(--rule);font-size:.84rem}
+.log li:last-child{border-bottom:0}
+.log li time{font-family:var(--f-data);font-size:.72rem;color:var(--muted);padding-top:2px}
+.log li.ev{border-left:3px solid var(--gold)}
+.log li.alert{border-left:3px solid var(--bad)}
+.log li.dec{border-left:3px solid var(--accent)}
+.log li.good{color:inherit;border-left:3px solid var(--good)}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:var(--r);font-size:.82rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+footer{border-top:1px solid var(--rule);color:var(--muted);font-size:.78rem}
+footer .wrap{padding-block:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="mast">
+  <canvas id="guil" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow" id="eyebrow">Banco Central do Brasil · simulação</div>
+      <h1>Simulador do Banco Central</h1>
+      <p id="tagline">Leve o IPCA à meta de 3% sem sacrificar o emprego. A Selic leva meses para agir.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Versão do jogo">
+      <button id="modeBR" aria-pressed="true">Brasil · BCB</button>
+      <button id="modeCL" aria-pressed="false">Clássico</button>
+    </div>
+  </div>
+</header>
+
+<section class="status" aria-label="Situação do mandato">
+  <div class="wrap">
+    <div class="cell"><span class="label">Mês</span><span class="v" id="stMonth">—</span></div>
+    <div class="cell"><span class="label">Mandato</span><span class="v" id="stProg">—</span><div class="bar"><i id="stBar"></i></div></div>
+    <div class="cell"><span class="label">Pontuação de estabilidade</span><span class="v" id="stScore">—</span></div>
+    <div class="cell"><span class="label">Mandato · preços</span><span class="chip" id="stPrice">—</span></div>
+    <div class="cell"><span class="label">Mandato · emprego</span><span class="chip" id="stEmp">—</span></div>
+    <div class="cell"><span class="label">Desejável · crescimento</span><span class="chip" id="stGrow">—</span></div>
+  </div>
+</section>
+
+<div class="wrap" id="bannerWrap" hidden>
+  <div class="banner">
+    <div><strong id="bannerTitle">Mandato encerrado</strong><div id="bannerText" class="hint"></div></div>
+    <div class="row"><button class="btn" id="btnEndless">Continuar jogando (sem fim)</button><button class="btn primary" id="btnNew2">Nova economia</button></div>
+  </div>
+</div>
+
+<main class="wrap layout">
+  <div style="min-width:0;display:flex;flex-direction:column;gap:22px">
+    <section>
+      <div class="sec-head"><h2>Painel econômico</h2><span class="label" id="scenLabel">—</span></div>
+      <div class="grid2">
+        <div class="card"><h3><span id="tInf">Inflação (3 meses anualizada)</span><span class="num" id="vInf">—</span></h3>
+          <canvas id="cInf"></canvas>
+          <div class="legend"><span style="color:var(--s-inf)"><i></i>Tendência 3m</span><span style="color:var(--s-inf)"><i class="dot"></i>Leitura mensal</span><span style="color:var(--s-exp)"><i class="d"></i><span id="lgExp">Expectativa</span></span><span><i class="blk"></i><span id="lgBand">Banda da meta</span></span></div>
+        </div>
+        <div class="card"><h3><span>Desemprego</span><span class="num" id="vU">—</span></h3>
+          <canvas id="cU"></canvas>
+          <div class="legend"><span style="color:var(--s-u)"><i></i>Taxa</span><span style="color:var(--s-ref)"><i class="d"></i>Taxa natural (com cicatrizes)</span></div>
+        </div>
+        <div class="card"><h3><span id="tRate">Juro básico e juro real</span><span class="num" id="vR">—</span></h3>
+          <canvas id="cR"></canvas>
+          <div class="legend"><span style="color:var(--s-r)"><i></i><span id="lgRate">Juro básico</span></span><span style="color:var(--s-u)"><i></i>Juro real ex-ante</span><span style="color:var(--s-ref)"><i class="d"></i>Neutro nominal</span></div>
+        </div>
+        <div class="card"><h3><span>PIB (crescimento em 12 meses)</span><span class="num" id="vG">—</span></h3>
+          <canvas id="cG"></canvas>
+          <div class="legend"><span style="color:var(--s-r)"><i></i>Crescimento</span><span style="color:var(--s-ref)"><i class="d"></i>Potencial</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Monitores de nível</h2><span class="label">índices · 100 = dia da posse</span></div>
+      <div class="grid2">
+        <div class="card"><h3><span>Nível de preços acumulado</span><span class="num" id="vCPI">100,0</span></h3>
+          <canvas id="cCPI"></canvas>
+          <div class="legend"><span style="color:var(--s-inf)"><i></i><span id="lgCPI">Índice de preços</span></span><span style="color:var(--s-exp)"><i class="d"></i><span id="lgPath">Trajetória da meta</span></span></div>
+          <div class="stats">
+            <div><small>Desde a posse</small><b id="pSince">—</b></div>
+            <div><small>Últimos 12 meses</small><b id="p12">—</b></div>
+            <div><small>Média anual</small><b id="pAvg">—</b></div>
+            <div><small>Desvio da trajetória</small><b id="pGap">—</b></div>
+            <div><small id="pBuyL">R$ 100 hoje compram</small><b id="pBuy">—</b></div>
+          </div>
+        </div>
+        <div class="card"><h3><span>PIB real acumulado</span><span class="num" id="vY">100,0</span></h3>
+          <canvas id="cY"></canvas>
+          <div class="legend"><span style="color:var(--s-r)"><i></i>PIB efetivo</span><span style="color:var(--s-ref)"><i class="d"></i>Potencial</span><span style="color:var(--s-4)"><i class="d"></i>Tendência herdada</span></div>
+          <div class="stats">
+            <div><small>Desde a posse</small><b id="ySince">—</b></div>
+            <div><small>Últimos 12 meses</small><b id="y12">—</b></div>
+            <div><small>Média anual</small><b id="yAvg">—</b></div>
+            <div><small>Potencial vs tendência</small><b id="yScar">—</b></div>
+            <div><small>Perdido em recessões</small><b id="yLost">—</b></div>
+          </div>
+        </div>
+        <div class="card"><h3><span>PIB nominal e trajetória</span><span class="num" id="vNG">100,0</span></h3>
+          <canvas id="cNG"></canvas>
+          <div class="legend"><span style="color:var(--s-4)"><i></i>PIB nominal</span><span style="color:var(--s-ref)"><i class="d"></i><span id="lgNG">Trajetória</span></span></div>
+        </div>
+        <div class="card"><h3><span>Preços ao consumidor vs deflator</span><span class="num" id="vWedge">—</span></h3>
+          <canvas id="cDef"></canvas>
+          <div class="legend"><span style="color:var(--s-inf)"><i></i><span id="lgCPI2">Consumidor (12m)</span></span><span style="color:var(--s-u)"><i></i>Deflator do PIB (12m)</span></div>
+        </div>
+        <div class="card" id="fxCard"><h3><span>Câmbio · R$ por US$</span><span class="num" id="vFX">100,0</span></h3>
+          <canvas id="cFX"></canvas>
+          <div class="legend"><span style="color:var(--s-u)"><i></i>Índice do dólar (100 = posse)</span></div>
+          <p class="hint">Juro real alto atrai capital e valoriza o real, o que ajuda a derrubar o IPCA. Risco fiscal e perda de credibilidade fazem o contrário.</p>
+        </div>
+        <div class="card"><h3><span>Curva de juros</span><span class="num" id="vCurve">—</span></h3>
+          <canvas id="cCurve"></canvas>
+          <div class="legend"><span style="color:var(--s-r)"><i></i><span id="lgCurve1">Juro básico</span></span><span style="color:var(--s-u)"><i></i>2 anos</span><span style="color:var(--s-4)"><i></i>10 anos</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="desk" aria-label="Mesa de política monetária">
+    <h2><span id="deskTitle">Reunião do Copom</span><span class="label" id="deskMonth">—</span></h2>
+    <div class="copom" id="copomBox"><span id="copomText">—</span><span id="copomNext" class="mono"></span></div>
+
+    <div>
+      <div class="label" id="rateLabel">Meta da Selic</div>
+      <div class="rate">
+        <button class="step" id="rateDown" aria-label="Reduzir 0,25 ponto">−</button>
+        <div class="big" id="rateBig">—</div>
+        <button class="step" id="rateUp" aria-label="Aumentar 0,25 ponto">+</button>
+      </div>
+      <input type="range" id="rate" min="2" max="30" step="0.25" value="15" aria-label="Taxa básica de juros">
+      <div class="ticks" id="rateTicks"></div>
+      <p class="hint" id="rateHint"></p>
+    </div>
+
+    <div>
+      <div class="label">Balanço · QT ↔ QE <span id="qeVal" class="mono" style="float:right">Neutro</span></div>
+      <input type="range" id="qe" min="-100" max="100" step="5" value="0" aria-label="Balanço do banco central">
+      <div class="ticks"><span>Apertar</span><span>0</span><span>Afrouxar</span></div>
+      <p class="hint">Funciona até no piso dos juros, comprimindo o prêmio a termo.</p>
+    </div>
+
+    <button class="btn primary" id="btnStep">Avançar um mês ▸</button>
+    <div class="row">
+      <button class="btn" id="btnAuto">▶ Rodar automático</button>
+      <button class="btn" id="btnRestart">Reiniciar</button>
+    </div>
+
+    <div class="mini">
+      <div><span class="label" id="miniExpL">Expectativa 12m</span><b id="mExp">—</b></div>
+      <div><span class="label">Credibilidade</span><b id="mCred">—</b></div>
+      <div><span class="label">Hiato do produto</span><b id="mGap">—</b></div>
+      <div><span class="label">Juro real − neutro</span><b id="mRgap">—</b></div>
+    </div>
+    <div>
+      <div class="label">Fragilidade financeira <span id="fragTxt" class="mono" style="float:right">—</span></div>
+      <div class="meter"><i id="fragMk" style="left:10%"></i></div>
+    </div>
+
+    <hr class="sep">
+    <fieldset>
+      <legend class="label">Piloto automático</legend>
+      <label class="check"><input type="checkbox" id="apTaylor"><span><b>Regra de Taylor</b> · reage à inflação e ao hiato do produto separadamente</span></label>
+      <label class="check"><input type="checkbox" id="apNGDP"><span><b>Meta de PIB nominal</b> · mantém o PIB nominal numa trajetória de <span id="ngRate">5%</span> ao ano</span></label>
+      <select id="ngRule" aria-label="Regra do PIB nominal">
+        <option value="makeup">PIB nominal · repõe só as quedas</option>
+        <option value="strict">PIB nominal · nível estrito (devolve excessos)</option>
+        <option value="growth">PIB nominal · só crescimento (sem reposição)</option>
+      </select>
+      <label class="check"><input type="checkbox" id="apGov" checked><span><b>Limitador de fragilidade</b> · no máximo <span id="govMax">2,00</span> p.p. a cada 3 meses e juro real até <span id="govCap">11</span>%</span></label>
+    </fieldset>
+
+    <hr class="sep">
+    <fieldset>
+      <legend class="label">Comunicação (forward guidance)</legend>
+      <select id="fgSel" aria-label="Compromisso">
+        <option value="up">—</option>
+        <option value="down">Manter os juros baixos por 12 meses</option>
+      </select>
+      <div class="row"><button class="btn" id="fgAnn">Anunciar</button><button class="btn" id="fgWd">Retirar compromisso</button></div>
+      <p class="hint" id="fgState">Nenhum compromisso em vigor.</p>
+    </fieldset>
+
+    <hr class="sep">
+    <fieldset>
+      <legend class="label">Estabilidade financeira</legend>
+      <label class="check"><input type="checkbox" id="fElf"><span><b>Linha de liquidez de emergência</b> · bancos tomam emprestado contra títulos pelo valor de face; perdas contábeis não forçam vendas</span></label>
+      <label class="check"><input type="checkbox" id="fCcyb"><span><b>Colchão contracíclico</b> · bancos acumulam 2,5 p.p. de capital em um ano; o crédito desacelera um pouco</span></label>
+    </fieldset>
+
+    <hr class="sep">
+    <details id="cfg">
+      <summary>Configuração da partida</summary>
+      <fieldset>
+        <label class="label" for="scenSel">Cenário</label>
+        <select id="scenSel"></select>
+        <label class="label" for="modelSel">Modelo</label>
+        <select id="modelSel">
+          <option value="R">Realista · não linear, cicatrizes e crises</option>
+          <option value="L">Livro-texto · linear, sem crises</option>
+        </select>
+        <label class="check"><input type="checkbox" id="oCredit" checked><span><b>Ciclo de crédito</b> · juro real baixo por muito tempo acumula fragilidade</span></label>
+        <label class="check"><input type="checkbox" id="oSupply" checked><span><b>Choques aleatórios</b> · petróleo, safra, humor global</span></label>
+        <label class="check"><input type="checkbox" id="oEndless"><span><b>Modo sem fim</b> · sem prazo de mandato nem demissão</span></label>
+        <label class="check"><input type="checkbox" id="oFast"><span><b>Reprodução rápida</b> · 220 ms por mês no modo automático</span></label>
+      </fieldset>
+    </details>
+  </aside>
+</main>
+
+<section class="band-sec">
+  <div class="wrap">
+    <h2>Mercados e bancos</h2>
+    <p class="intro">O que o mercado espera da sua política, quanto custa o crédito e quanto os bancos aguentam.</p>
+    <div class="grid2">
+      <div class="card">
+        <h3><span>Preços de mercado</span></h3>
+        <div class="stats" style="border-top:0;margin-top:4px;padding-top:0">
+          <div><small>Juro de 2 anos</small><b id="kY2">—</b></div>
+          <div><small>Juro de 10 anos</small><b id="kY10">—</b></div>
+          <div><small>Prêmio a termo (10a)</small><b id="kTP">—</b></div>
+          <div><small>Spread de crédito</small><b id="kSP">—</b></div>
+          <div><small id="kCapL">Índice de Basileia</small><b id="kCap">—</b></div>
+          <div><small>Variação do juro em 3 meses</small><b id="kHike">—</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span>De onde vem a demanda</span><span class="label">pontos de hiato</span></h3>
+        <div class="decomp" id="decomp"></div>
+        <p class="hint">Barras para a direita aquecem a economia; para a esquerda, esfriam. A política monetária age com defasagem de 9 a 18 meses.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band-sec">
+  <div class="wrap">
+    <h2>Governo · fora do seu controle</h2>
+    <p class="intro">Decisões do Executivo e choques que você não escolhe, mas terá de administrar. Use-os para testar sua política. Cada um entra em vigor no próximo mês.</p>
+    <div class="gov" id="govBox"></div>
+    <div class="facts">
+      <span>Crescimento potencial <b id="fPot">—</b></span>
+      <span>Desemprego natural <b id="fUs">—</b></span>
+      <span>Juro neutro nominal <b id="fNeu">—</b></span>
+      <span id="fCartaW">Cartas abertas ao CMN <b id="fCarta">0</b></span>
+    </div>
+  </div>
+</section>
+
+<section class="band-sec">
+  <div class="wrap">
+    <h2>Compartilhar, reproduzir e comparar</h2>
+    <p class="intro">O código da partida recria a mesma economia com os mesmos choques. O registro de decisões refaz a sua partida mês a mês.</p>
+    <div class="share">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div class="label">Código da partida</div>
+        <div class="row" style="align-items:stretch"><div class="code" id="gameCode">—</div><button class="btn" id="btnCopyCode" style="flex:none">Copiar código</button></div>
+        <div class="row"><button class="btn" id="btnReplay">Repetir esta economia</button><button class="btn" id="btnNew">Nova economia</button></div>
+        <label class="label" for="loadBox">Carregar código ou registro de decisões</label>
+        <textarea id="loadBox" placeholder="Cole aqui um código (ex.: BR-h25-RCS-K3J9X) ou um registro exportado"></textarea>
+        <div class="row"><button class="btn" id="btnLoad">Carregar</button><button class="btn" id="btnExport">Exportar registro</button></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div class="label">Comparar com alternativas</div>
+        <p class="hint" style="margin:0">Roda a mesma economia, com os mesmos choques e decisões de governo, sob regras automáticas, até o mês em que você está.</p>
+        <button class="btn" id="btnCompare">Comparar agora</button>
+        <div class="tbl-wrap"><table id="cmpTbl"><thead><tr><th>Estratégia</th><th>Pontos</th><th>Inflação média</th><th>Desemprego médio</th><th>Perda de PIB</th></tr></thead><tbody><tr><td colspan="5" style="text-align:left;color:var(--muted)">Clique em “Comparar agora”.</td></tr></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band-sec">
+  <div class="wrap">
+    <div class="sec-head"><h2>Diário de bordo</h2><span class="label" id="logCount">—</span></div>
+    <ul class="log" id="log"></ul>
+  </div>
+</section>
+
+<footer><div class="wrap">Modelo didático, inspirado em simuladores de política monetária. Parâmetros aproximados; não é previsão. Versão <span id="ver" class="mono">1.0</span>.</div></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script id="model">
+/* ============== MODELO ECONÔMICO (sem DOM) ============== */
+var SIM = (function(){
+'use strict';
+const OFF=12, VERSION='1.0';
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MODES={
+  BR:{id:'BR',bank:'Banco Central do Brasil',rate:'Selic',cpi:'IPCA',target:3,band:1.5,ustar:6.5,rstar:5,gpot:2,iMin:2,iMax:30,term:96,tp0:2,inertia:0.3,fx:true,
+      copom:[0,2,3,5,6,8,10,11],printSd:1.3,realCap:11,govStep:2,cur:'R$'},
+  CL:{id:'CL',bank:'Banco Central',rate:'Juro básico',cpi:'Inflação',target:2,band:1,ustar:4.5,rstar:0.5,gpot:2,iMin:0,iMax:20,term:120,tp0:1,inertia:0.1,fx:false,
+      copom:null,printSd:1.1,realCap:8,govStep:1.25,cur:'$'}
+};
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function mulberry(seed){let a=seed>>>0;return function(){a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){const u=Math.max(r(),1e-9),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const fmt=(x,d)=>x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+function set(s,o){Object.assign(s,o);}
+function addImp(s,amt,months){s.impQ.push({amt,left:months});}
+function crisis(s,spJump,demHit,msg){
+  let k=s.elf?0.5:1; if(!s.elf && s.bankCap<9) k*=1.3;
+  s.crisisSp+=spJump*k; s.dem+=demHit*k; s.F*=0.45; s.crisisCool=36; s.crisisLoss+=2.2*k;
+  log(s,msg+(s.elf?' A linha de liquidez de emergência evitou vendas forçadas de títulos.':' Sem linha de emergência, bancos vendem títulos às pressas.'),'alert');
+}
+
+const SCEN={
+  BR:{
+    h25:{name:'Herança de 2025 · Selic a 15%',init(s){set(s,{i:15,core:5.2,piE:4.6,C:0.45,y:0.8,u:5.9,fiscalRisk:1.0,F:0.3});}},
+    calm:{name:'Calmaria · meta contínua',init(s){set(s,{i:8,core:3,piE:3.1,C:0.75,y:0,u:6.5});}},
+    c15:{name:'Recessão de 2015–16 · difícil',init(s){set(s,{i:12.75,core:7.5,piE:6.6,C:0.3,y:-0.5,u:7.2,fiscalRisk:2.2,dem:-2.5,F:0.45});},
+      ev(s,m){if(m===0){addImp(s,6,8);log(s,'Realinhamento de preços administrados: energia elétrica e combustíveis sobem forte.','ev');}
+              if(m===10){s.fiscalRisk+=1;s.dem-=1.5;log(s,'Agência rebaixa a nota de crédito do país; perda do grau de investimento.','ev');}}},
+    p20:{name:'Pandemia e o surto de 2021',init(s){set(s,{i:4.25,core:3.8,piE:3.6,C:0.75,y:0.3,u:11.2,ustarBase:10.2});},
+      ev(s,m){if(m===2){s.dem-=10;s.fxShock+=25;log(s,'Pandemia: lojas fecham, atividade despenca e o dólar dispara.','alert');}
+              if(m===4){s.fiscal+=4;log(s,'Governo aprova auxílio emergencial amplo.','ev');}
+              if(m===14){addImp(s,4,10);log(s,'Commodities em alta e crise hídrica: bandeira tarifária de escassez.','ev');}}},
+    rand:{name:'Era aleatória',init(s,r){randInit(s,r);}}
+  },
+  CL:{
+    calm:{name:'Águas calmas',init(s){set(s,{i:2.5,core:2,piE:2,C:0.8,y:0,u:4.5});}},
+    g70:{name:'Grande Inflação (anos 1970) · difícil',init(s){set(s,{i:6,core:6.5,piE:6,C:0.3,y:1.5,u:4.8,sMul:1.5});},
+      ev(s,m){if(m===8){addImp(s,7,7);s.dem-=1;log(s,'Embargo do petróleo: o preço do barril quadruplica.','alert');}
+              if(m===66){addImp(s,6,9);s.dem-=1;log(s,'Revolução no Irã: segundo choque do petróleo.','alert');}}},
+    lost:{name:'Década perdida (limite zero) · difícil',init(s){set(s,{i:0.25,core:0.4,piE:1.0,C:0.6,y:-3,u:6.8,rstarBase:-2.5,ustarBase:5.2});},
+      ev(s,m){if(m>12&&m<108)s.rstarBase+=0.02;}},
+    gr:{name:'Grande Recessão (2006–2015)',init(s){set(s,{i:5.25,core:2.6,piE:2.3,C:0.8,y:1.2,u:4.6,F:0.9});},
+      ev(s,m){if(m===20)crisis(s,4.5,-5,'Quebra de um grande banco de investimento: o crédito congela.');
+              if(m>20&&m<60)s.rstarBase-=0.05;}},
+    rand:{name:'Era aleatória',init(s,r){randInit(s,r);}}
+  }
+};
+function randInit(s,r){const M=s.M;
+  const core=M.target+(r()-0.4)*5, y=(r()-0.5)*4;
+  set(s,{core,piE:M.target+(core-M.target)*0.6,y,u:M.ustar-0.5*y,C:0.4+r()*0.45,F:0.15+r()*0.5,
+         i:Math.max(M.iMin,Math.round((M.rstar+M.target+(r()-0.5)*5)*4)/4)});
+  if(M.fx) s.fiscalRisk=r()*1.5;
+}
+
+const GOV={
+  tar:{name:'Tarifas de importação',desc:'Salto pontual no nível de preços enquanto o custo de importação é repassado. O PIB potencial cai de vez.',fx:'+1,5% no nível de preços',
+    fn(s){addImp(s,3,6);s.P*=0.994;log(s,'Governo eleva tarifas de importação. Preços sobem e o potencial encolhe.','ev');}},
+  mao:{name:'Escassez de mão de obra',desc:'Corte de imigração ou envelhecimento encolhe a força de trabalho. O potencial cai e a curva de Phillips fica mais inclinada.',fx:'por 3 anos',
+    fn(s){s.laborM=36;log(s,'Força de trabalho encolhe: potencial menor e salários mais sensíveis.','ev');}},
+  def:{name:'Gasto deficitário',desc:'Injeção pura de demanda. Também eleva o juro neutro, então você precisa de juros mais altos só para ficar neutro.',fx:'+1,5 p.p. de demanda',
+    fn(s){s.fiscal+=1.5;s.fiscalR+=0.6;log(s,'Governo amplia gastos financiados por dívida.','ev');}},
+  risco:{name:'Arcabouço fiscal desacreditado',desc:'Mercado duvida da trajetória da dívida. Sobem o prêmio de risco, o dólar e os juros longos.',fx:'risco fiscal ↑',
+    fn(s){s.fiscalRisk+=1.5;s.fiscal+=0.6;log(s,'Mudança nas regras fiscais assusta o mercado: dólar e juros futuros disparam.','ev');}},
+  seca:{name:'Crise hídrica',desc:'Reservatórios baixos acionam a bandeira tarifária vermelha. Choque de oferta temporário na energia.',fx:'+1,3% no nível de preços',
+    fn(s){addImp(s,3.2,5);s.dem-=0.3;log(s,'Crise hídrica: bandeira vermelha na conta de luz.','ev');}},
+  comm:{name:'Boom de commodities',desc:'Preços de soja, minério e petróleo sobem lá fora. O real se valoriza e a renda do país aumenta.',fx:'real ↑ · demanda ↑',
+    fn(s){s.fxShock-=20;s.dem+=0.8;log(s,'Boom de commodities: o real se valoriza e a renda do agro cresce.','ev');}}
+};
+const GOV_BY={BR:['tar','def','risco','seca','comm','mao'],CL:['tar','mao','def']};
+
+function randomEvent(s,u){
+  const BR=s.M.fx;
+  const ev=BR?[
+    ()=>{addImp(s,2.5,6);log(s,'Quebra de safra encarece os alimentos.','ev');},
+    ()=>{s.fxShock+=15;log(s,'Aversão a risco global: capital deixa os emergentes e o dólar sobe.','ev');},
+    ()=>{addImp(s,2.2,5);log(s,'Petróleo sobe; Petrobras reajusta a gasolina.','ev');},
+    ()=>{s.dem+=1.2;log(s,'Crédito consignado e renda em alta aquecem o consumo.','ev');},
+    ()=>{s.dem-=1.2;log(s,'Confiança de empresários despenca; investimentos adiados.','ev');},
+    ()=>{s.fxShock-=10;log(s,'Fluxo estrangeiro forte valoriza o real.','ev');}
+  ]:[
+    ()=>{addImp(s,3,6);log(s,'Choque do petróleo: energia sobe.','ev');},
+    ()=>{s.dem+=1.5;log(s,'Euforia nas bolsas: consumo e investimento aceleram.','ev');},
+    ()=>{s.dem-=1.5;log(s,'Pânico global: empresas cortam investimentos.','ev');},
+    ()=>{s.es-=0.8;s.gpotBoost=24;log(s,'Onda de produtividade: custos caem e o potencial sobe temporariamente.','ev');},
+    ()=>{addImp(s,2,4);log(s,'Gargalos nas cadeias de suprimento elevam preços de bens.','ev');}
+  ];
+  ev[Math.floor(u*ev.length)]();
+}
+
+function log(s,text,kind){s.logs.push({m:s.m,text,kind:kind||''});}
+
+function rateOpen(s){const M=s.M;return !M.copom||M.copom.indexOf(s.m%12)>=0;}
+function nextCopom(s){const M=s.M;if(!M.copom)return 0;for(let k=1;k<=12;k++){if(M.copom.indexOf((s.m+k)%12)>=0)return k;}return 0;}
+
+function fin(s){
+  const M=s.M, m=s.m;
+  s.piYoY=(s.cpiA[OFF+m]/s.cpiA[OFF+m-12]-1)*100;
+  s.pi3=(Math.pow(s.cpiA[OFF+m]/s.cpiA[OFF+m-3],4)-1)*100;
+  s.gy=(s.yA[OFF+m]/s.yA[OFF+m-12]-1)*100;
+  s.defYoY=(s.defA[OFF+m]/s.defA[OFF+m-12]-1)*100;
+  const tay=s.rstar+s.piE+1.5*(s.core-M.target)+0.5*s.y;
+  let i2=0.55*s.i+0.45*clamp(tay,M.iMin,M.iMax);
+  if(s.guid&&s.guid.type==='down') i2-=0.6;
+  if(s.guid&&s.guid.type==='up') i2+=0.25;
+  s.i2=Math.max(M.iMin-0.25,i2);
+  s.tp=M.tp0-1.6*s.qeS+0.35*(s.F-0.2)+1.2*(0.75-s.C)+0.8*s.fiscalRisk;
+  s.y10=0.35*s.i2+0.65*(s.rstar+s.piE)+s.tp;
+  s.sp=1.6+0.7*(s.F-0.2)+s.crisisSp+0.15*Math.max(0,-s.y)+(s.ccyb&&s.ccybB<1?0.2:0);
+  s.rgap=0.5*(s.i-s.piE-s.rstar)+0.5*(s.i2-s.piE-s.rstar);
+  s.bankCap=12+2.5*s.ccybB-0.6*Math.max(0,s.y10-s.y10start)-2*(s.F-0.2)-s.crisisLoss;
+}
+
+function newState(cfg){
+  const M=MODES[cfg.mode];
+  const s={cfg,M,rng:mulberry(cfg.seed),m:0,
+    i:M.rstar+M.target,qe:0,qeS:0,core:M.target,piE:M.target,C:0.75,y:0,u:M.ustar,ustar:M.ustar,ustarBase:M.ustar,
+    rstarBase:M.rstar,rstar:M.rstar,gpot:M.gpot,gpotBoost:0,F:0.2,crisisSp:0,crisisCool:0,crisisLoss:0,fiscal:0,fiscalR:0,fiscalRisk:0,dem:0,
+    ed:0,es:0,efx:0,fxShock:0,dep:0,depS:0,FX:100,impQ:[],impNow:0,laborM:0,sMul:1,
+    guid:null,elf:false,ccyb:false,ccybB:0,lost:0,scoreSum:0,scoreN:0,outRun:0,cartas:0,hiRun:0,over:null,reconduzido:false,
+    logs:[],H:[],dec:[],ngBase:0,y10start:0,mscore:100,contrib:{pol:0,mkt:0,cred:0,fis:0,oth:0}};
+  SCEN[cfg.mode][cfg.scen].init(s,s.rng);
+  if(cfg.credit===false) s.F=Math.min(s.F,0.3);
+  s.ustar=s.ustarBase; s.rstar=s.rstarBase;
+  s.P=100/Math.exp(s.y/100); s.Y=100; s.CPI=100; s.DEF=100;
+  s.cpiA=[];s.yA=[];s.defA=[];s.pA=[];s.iA=[];s.ngA=[];
+  for(let k=0;k<=OFF;k++){const b=OFF-k;const pf=Math.pow(1+s.core/1200,b),gf=Math.pow(1+M.gpot/1200,b);
+    s.cpiA.push(100/pf);s.defA.push(100/pf);s.yA.push(100/gf);s.pA.push(s.P/gf);s.iA.push(s.i);s.ngA.push(100/(pf*gf));}
+  s.y10start=0; fin(s); s.y10start=s.y10; fin(s);
+  s.rg1=s.rg2=s.rgap;
+  s.pm=s.core;
+  record(s);
+  log(s,'Você tomou posse no '+M.bank+'. Cenário: '+SCEN[cfg.mode][cfg.scen].name+'. '+(M.copom?'O Copom se reúne 8 vezes por ano; só nesses meses a Selic pode mudar.':'Você decide os juros todo mês.')+' Meta: '+fmt(M.target,1)+'% ± '+fmt(M.band,1)+' p.p.','dec');
+  return s;
+}
+
+function record(s){
+  const M=s.M,m=s.m,T=M.target;
+  s.H.push({m,pi3:s.pi3,pm:s.pm,piE:s.piE,piYoY:s.piYoY,u:s.u,ustar:s.ustar,i:s.i,rr:s.i-s.piE,neu:s.rstar+s.piE,y:s.y,gy:s.gy,gp:s.gpot,
+    CPI:s.CPI,cpiPath:100*Math.pow(1+T/100,m/12),Y:s.Y,P:s.P,trend:100*Math.pow(1+M.gpot/100,m/12),
+    NG:s.ngA[OFF+m],ngPath:100*Math.pow(1+(T+M.gpot)/100,m/12),defYoY:s.defYoY,FX:s.FX,i2:s.i2,y10:s.y10,C:s.C,F:s.F});
+}
+
+function guidanceAct(s,a){const M=s.M,thr=M.target+1;
+  if(a==='withdraw'){if(s.guid){s.C=clamp(s.C-0.05,0.05,0.97);log(s,'Compromisso retirado antes do prazo. O mercado anota.','alert');s.guid=null;}return;}
+  s.guid={type:a,start:s.m};
+  log(s,a==='up'?'Anúncio: juros ficam altos até a inflação em 12 meses cair abaixo de '+fmt(thr,0)+'%.':'Anúncio: juros ficam baixos pelos próximos 12 meses.','dec');
+}
+function guidanceCheck(s,prevI){const M=s.M,thr=M.target+1,g=s.guid;if(!g)return;
+  if(g.type==='up'){
+    if(s.i<prevI&&s.piYoY>=thr){s.C=clamp(s.C-0.15,0.05,0.97);log(s,'Compromisso quebrado: você cortou juros com a inflação acima de '+fmt(thr,0)+'%. Credibilidade despenca.','alert');s.guid=null;}
+    else if(s.piYoY<thr&&s.m>g.start){s.C=clamp(s.C+0.03,0.05,0.97);log(s,'Compromisso cumprido: inflação abaixo de '+fmt(thr,0)+'%. Credibilidade sobe.','good');s.guid=null;}
+  }else{
+    if(s.i>prevI){s.C=clamp(s.C-0.15,0.05,0.97);log(s,'Compromisso quebrado: você subiu juros antes de 12 meses. Credibilidade despenca.','alert');s.guid=null;}
+    else if(s.m-g.start>=12){s.C=clamp(s.C+0.03,0.05,0.97);log(s,'Compromisso de 12 meses cumprido.','good');s.guid=null;}
+  }
+}
+
+/* ---------- Pilotos automáticos ---------- */
+function roundRate(s,i){const M=s.M;return clamp(Math.round(i*4)/4,M.iMin,M.iMax);}
+function governor(s,i){const M=s.M,prev3=s.iA[OFF+s.m-3]!=null?s.iA[OFF+s.m-3]:s.i;
+  i=Math.min(i,prev3+M.govStep,s.i+M.govStep);i=Math.max(i,s.i-M.govStep*1.5);
+  i=Math.min(i,s.piE+M.realCap);return i;}
+function taylor(s,gov){const M=s.M;const pin=0.5*s.pi3+0.5*s.piYoY;
+  let i=s.rstar+pin+0.5*(pin-M.target)+0.5*s.y; if(gov)i=governor(s,i); return roundRate(s,i);}
+function ngdp(s,rule,gov){const M=s.M,g=M.target+M.gpot,m=s.m;
+  const ng=s.ngA[OFF+m]; let path=100*Math.exp(s.ngBase/100)*Math.pow(1+g/100,m/12);
+  let gap=Math.log(ng/path)*100;
+  if(rule==='makeup'&&gap>0){s.ngBase+=gap;gap=0;}
+  if(rule==='growth'){s.ngBase+=gap;gap=0;}
+  const ngy=(ng/s.ngA[OFF+m-12]-1)*100;
+  let i=s.rstar+s.piE+0.6*gap+0.8*(ngy-g); if(gov)i=governor(s,i); return roundRate(s,i);}
+
+/* ---------- Um mês ---------- */
+function step(s,d){
+  if(s.over) return;
+  const M=s.M,r=s.rng,T=M.target,B=M.band;
+  const z=[];for(let k=0;k<6;k++)z.push(gauss(r));const uu=[r(),r(),r()];
+  const prevI=s.i, open=rateOpen(s);
+  if(open) s.i=roundRate(s,d.i);
+  s.qe=clamp(d.qe,-1,1); s.elf=!!d.elf; s.ccyb=!!d.ccyb;
+  if(d.g) guidanceAct(s,d.g);
+  (d.gov||[]).forEach(k=>GOV[k]&&GOV[k].fn(s));
+  if(open){const di=s.i-prevI;
+    if(Math.abs(di)>1e-9) log(s,(M.copom?'Copom '+(di>0?'eleva':'reduz')+' a Selic em ':(di>0?'Juro básico sobe ':'Juro básico cai '))+fmt(Math.abs(di),2)+' p.p., para '+fmt(s.i,2)+'%.','dec');
+    else if(M.copom) log(s,'Copom mantém a Selic em '+fmt(s.i,2)+'%.','dec');}
+  guidanceCheck(s,prevI);
+  const sc=SCEN[s.cfg.mode][s.cfg.scen]; if(sc.ev) sc.ev(s,s.m);
+  if(s.cfg.supply&&uu[0]<0.014&&s.m>3) randomEvent(s,uu[1]);
+
+  s.fiscal*=0.97; s.fiscalR*=0.99; s.fiscalRisk*=0.975; s.dem*=0.93; s.fxShock*=0.9; s.crisisSp*=0.93; s.crisisLoss*=0.97;
+  if(s.crisisCool>0)s.crisisCool--; if(s.laborM>0)s.laborM--; if(s.gpotBoost>0)s.gpotBoost--;
+  s.rstar=s.rstarBase+s.fiscalR;
+  s.qeS+=(s.qe-s.qeS)*0.12;
+  s.ccybB=s.ccyb?Math.min(1,s.ccybB+1/12):Math.max(0,s.ccybB-1/6);
+  fin(s);
+
+  s.ed=0.9*s.ed+0.22*z[0];
+  s.es=0.85*s.es+(s.cfg.supply?0.32:0.18)*s.sMul*z[1];
+  s.efx=0.85*s.efx+0.55*z[2];
+
+  // transmissão com defasagem em dois estágios
+  s.rg1+=(s.rgap-s.rg1)/5; s.rg2+=(s.rg1-s.rg2)/5;
+  const cPol=-0.9*s.rg2+0.8*s.qeS;
+  const cMkt=-0.5*(s.tp-M.tp0+1.6*s.qeS);
+  const cCred=-0.8*(s.sp-1.6);
+  const cFis=s.fiscal;
+  const cOth=1.4*s.ed+s.dem+(M.fx?0.02*s.depS:0);
+  s.contrib={pol:cPol,mkt:cMkt,cred:cCred,fis:cFis,oth:cOth};
+  s.y+=0.09*(cPol+cMkt+cCred+cFis+cOth-s.y);
+
+  // oferta: potencial, cicatrizes
+  const gp=s.gpot-(s.laborM>0?0.6:0)+(s.gpotBoost>0?0.5:0);
+  s.P*=Math.exp(gp/1200);
+  if(s.cfg.model!=='L'&&s.y<-1.5){s.P*=1-0.0003*(-s.y-1.5);s.ustarBase+=0.004*(-s.y-1.5);}
+  s.ustarBase+=(M.ustar-s.ustarBase)*0.006;
+  s.ustar=s.ustarBase-(s.laborM>0?0.3:0);
+  s.lost+=Math.max(0,-s.y)/12;
+  s.Y=s.P*Math.exp(s.y/100);
+  s.u=Math.max(1.5,s.u+0.22*(s.ustar-0.5*s.y-s.u)+0.04*z[3]);
+
+  // câmbio
+  if(M.fx){const carry=(s.i-s.piE)-s.rstar;
+    const depT=Math.max(-25,Math.min(40,-1.5*carry+6*s.efx+3*s.fiscalRisk+4*(0.75-s.C)+s.fxShock));
+    s.dep=0.5*s.dep+0.5*depT; s.depS+=(s.dep-s.depS)*0.25; s.FX*=1+s.dep/1200;}
+
+  // inflação
+  let kap=s.cfg.model==='L'?0.22:(s.y>0?0.25+0.07*s.y:0.25);
+  if(s.laborM>0)kap*=1.4;
+  let imp=0; s.impQ=s.impQ.filter(q=>{imp+=q.amt;q.left--;return q.left>0;});
+  s.impNow=imp+(M.fx?0.06*s.depS:0);
+  const piStar=(1-M.inertia)*s.piE+M.inertia*s.piYoY+kap*s.y+s.es;
+  s.core+=0.16*(piStar-s.core);
+  s.pm=s.core+s.impNow+M.printSd*z[4];
+  s.CPI*=1+s.pm/1200; s.DEF*=1+(s.core+0.2*s.impNow+0.4*z[5])/1200;
+
+  // avança o relógio
+  s.m++;
+  s.cpiA.push(s.CPI);s.yA.push(s.Y);s.defA.push(s.DEF);s.pA.push(s.P);s.iA.push(s.i);s.ngA.push(s.Y*s.DEF/100);
+  fin(s);
+
+  // credibilidade e expectativas
+  const g=Math.abs(s.piYoY-T);
+  const improving=Math.abs(s.pi3-T)<g-0.5;
+  let dC=g<B*0.5?0.008*(1-s.C):g<B?0.003:improving?0:-Math.min(0.01,0.0025*(g-B));
+  if(s.piYoY>T+B&&s.rgap>0.5)dC+=0.003*Math.min(3,s.rgap);
+  if(s.piYoY<T-B&&s.i-s.piE-s.rstar<-0.5)dC+=0.003;
+  if(s.guid&&s.guid.type==='up')dC+=0.003;
+  s.C=clamp(s.C+dC,0.05,0.97);
+  s.piE+=(1-s.C)*0.07*(0.5*s.pi3+0.5*s.piYoY-s.piE)+s.C*0.025*(T-s.piE)-0.008*clamp(s.rgap,-3,4);
+  if(s.cfg.model!=='L'&&s.i<=M.iMin+0.1&&s.y<-2)s.piE-=0.01*(-s.y-2);
+
+  // fragilidade financeira
+  if(s.cfg.credit)s.F+=0.010*Math.max(0,-s.rgap)+0.006*Math.max(0,s.y)+0.004*Math.max(0,s.qeS);
+  const hike=s.i-s.iA[OFF+s.m-3];
+  s.F+=0.05*clamp(hike-M.govStep,0,4);
+  s.F+=0.035*(0.2-s.F); s.F-=0.004*s.ccybB; s.F=Math.max(0,s.F);
+  fin(s);
+  if(s.cfg.model!=='L'&&s.cfg.credit&&s.F>0.75&&s.crisisCool===0&&uu[2]<(s.F-0.75)*0.15)
+    crisis(s,3.2,-3.5,'Crise financeira: inadimplência dispara e um banco médio quebra.');
+
+  // pontuação
+  const du=s.u-s.ustar;
+  const L=Math.pow((s.piYoY-T)/B,2)+0.8*du*du+0.15*Math.pow(Math.min(0,s.gy),2);
+  s.mscore=100/(1+L/3); s.scoreSum+=s.mscore; s.scoreN++;
+  record(s);
+
+  // mandato
+  if(s.m%3===0) log(s,'Trimestre: '+M.cpi+' 12m '+fmt(s.piYoY,1)+'% · desemprego '+fmt(s.u,1)+'% · PIB 12m '+fmt(s.gy,1)+'%.','');
+  if(M.fx){
+    if(g>B){s.outRun++; if(s.outRun===6){s.cartas++;s.outRun=0;s.C=clamp(s.C-0.03,0.05,0.97);
+      log(s,'Seis meses seguidos fora do intervalo de tolerância: você assina a '+s.cartas+'ª carta aberta ao ministro da Fazenda explicando o descumprimento.','alert');}}
+    else s.outRun=0;
+  }
+  if(!s.cfg.endless){
+    const avg=score(s);
+    if(M.fx&&s.m===48){ if(avg>=50||s.C>=0.4){s.reconduzido=true;log(s,'Fim do primeiro mandato. O presidente da República o reconduz e o Senado aprova. Mais 4 anos.','good');}
+      else s.over={t:'Não reconduzido',x:'Com '+fmt(avg,0)+' pontos de média e credibilidade de '+fmt(s.C*100,0)+'%, o Senado rejeitou sua recondução. Era preciso 50 pontos ou 40% de credibilidade.'};}
+    s.lowC=s.C<0.08?(s.lowC||0)+1:0;
+    if(s.lowC>=12) s.over={t:'Pressão insustentável',x:'Um ano inteiro com credibilidade abaixo de 8%. Você deixa o cargo.'};
+    s.hiRun=s.piYoY>(M.fx?15:12)?s.hiRun+1:0;
+    if(s.hiRun>=6) s.over={t:'Demitido',x:'Seis meses de inflação acima de '+(M.fx?15:12)+'% ao ano. O Legislado exige sua saída.'.replace('Legislado','Congresso')};
+    if(!s.over&&s.m>=M.term) s.over={t:'Fim do mandato',x:'Você completou '+(M.term/12)+' anos no cargo com '+fmt(avg,0)+' pontos de média.'};
+    if(s.over) log(s,s.over.t+'. '+s.over.x,'alert');
+  }
+}
+function score(s){return s.scoreN?s.scoreSum/s.scoreN:0;}
+
+/* ---------- Códigos, registro e replay ---------- */
+function encode(cfg){return cfg.mode+'-'+cfg.scen+'-'+cfg.model+(cfg.credit?'C':'')+(cfg.supply?'S':'')+'-'+(cfg.seed>>>0).toString(36).toUpperCase();}
+function decode(code){const p=String(code).trim().split('-');if(p.length!==4)return null;
+  const mode=p[0].toUpperCase();if(!MODES[mode])return null;const scen=p[1];if(!SCEN[mode][scen])return null;
+  const f=p[2].toUpperCase();const seed=parseInt(p[3],36);if(!isFinite(seed))return null;
+  return {mode,scen,model:f[0]==='L'?'L':'R',credit:f.indexOf('C')>0,supply:f.indexOf('S')>0,seed:seed>>>0,endless:false};}
+function packDec(d){return [d.i,Math.round(d.qe*100),d.elf?1:0,d.ccyb?1:0,d.g||0,(d.gov&&d.gov.length)?d.gov.join('+'):0];}
+function unpackDec(a){return {i:a[0],qe:a[1]/100,elf:!!a[2],ccyb:!!a[3],g:a[4]||null,gov:a[5]?String(a[5]).split('+'):[]};}
+
+function simulate(cfg,decs,policy,upto,ngRule){
+  const s=newState(Object.assign({},cfg,{endless:true}));const i0=s.i;
+  for(let k=0;k<upto;k++){
+    const base=decs[k]?unpackDec(decs[k]):(decs.length?unpackDec(decs[decs.length-1]):{i:s.i,qe:0,gov:[]});
+    const d={i:s.i,qe:base.qe,elf:base.elf,ccyb:base.ccyb,gov:decs[k]?base.gov:[],g:null};
+    if(policy==='you'){d.i=base.i;d.g=base.g;}
+    else if(policy==='taylor')d.i=taylor(s,true);
+    else if(policy==='ngdp')d.i=ngdp(s,ngRule||'makeup',true);
+    else if(policy==='hold')d.i=i0;
+    step(s,d);
+  }
+  const h=s.H.slice(1);const avg=k=>h.reduce((a,b)=>a+b[k],0)/Math.max(1,h.length);
+  return {score:score(s),pi:avg('piYoY'),u:avg('u'),lost:s.lost};
+}
+
+return {OFF,VERSION,MESES,MODES,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,fmt};
+})();
+</script>
+
+<script>
+/* ============== INTERFACE ============== */
+(function(){
+'use strict';
+const S=SIM,$=id=>document.getElementById(id);
+const fmt=S.fmt;
+const pct=(x,d=1)=>isFinite(x)?fmt(x,d)+'%':'—';
+const sg=(x,d=1)=>isFinite(x)?(x>0?'+':x<0?'−':'')+fmt(Math.abs(x),d):'—';
+let st=null, cfg=null, pend={g:null,gov:[]}, timer=null;
+const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}};
+
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
+function randSeed(){return (Math.random()*2**31)>>>0;}
+
+function start(c,replayDecs){
+  stopAuto(); cfg=c; st=S.newState(cfg); pend={g:null,gov:[]};
+  if(replayDecs){for(const a of replayDecs){if(st.over)break;const d=S.unpackDec(a);st.dec.push(a);S.step(st,d);}
+    const last=replayDecs[replayDecs.length-1]; if(last){const d=S.unpackDec(last);$('qe').value=Math.round(d.qe*100);$('fElf').checked=d.elf;$('fCcyb').checked=d.ccyb;}}
+  else{$('qe').value=0;$('fElf').checked=false;$('fCcyb').checked=false;}
+  setupMode(); $('rate').value=st.i; render();
+}
+function newCfg(mode,scen){return {mode,scen,model:$('modelSel').value,credit:$('oCredit').checked,supply:$('oSupply').checked,seed:randSeed(),endless:$('oEndless').checked};}
+
+function setupMode(){
+  const M=st.M,BR=M.fx;
+  $('modeBR').setAttribute('aria-pressed',BR);$('modeCL').setAttribute('aria-pressed',!BR);
+  $('eyebrow').textContent=BR?'Banco Central do Brasil · simulação':'Banco central genérico · simulação';
+  $('tagline').textContent=BR?'Leve o IPCA à meta de 3% sem sacrificar o emprego. A Selic leva meses para agir.':'Leve a inflação a 2% com pleno emprego. Cuidado com as defasagens.';
+  $('deskTitle').textContent=BR?'Reunião do Copom':'Mesa de política';
+  $('rateLabel').textContent=BR?'Meta da taxa Selic':'Taxa básica de juros';
+  const r=$('rate');r.min=M.iMin;r.max=M.iMax;
+  const tk=BR?[2,9,16,23,30]:[0,5,10,15,20];$('rateTicks').innerHTML=tk.map(v=>'<span>'+v+'%</span>').join('');
+  $('tInf').textContent=(BR?'IPCA':'Inflação')+' (3 meses anualizada)';
+  $('lgExp').textContent=BR?'Expectativa (Focus)':'Expectativa';
+  $('lgBand').textContent='Meta '+fmt(M.target,1)+'% ± '+fmt(M.band,1);
+  $('tRate').textContent=(BR?'Selic':'Juro básico')+' e juro real';$('lgRate').textContent=BR?'Selic':'Juro básico';$('lgCurve1').textContent=BR?'Selic':'Juro básico';
+  $('lgCPI').textContent=BR?'IPCA acumulado':'Índice de preços';$('lgPath').textContent='Trajetória de '+fmt(M.target,0)+'% a.a.';
+  $('lgCPI2').textContent=(BR?'IPCA':'Consumidor')+' (12m)';
+  $('lgNG').textContent='Trajetória de '+fmt(M.target+M.gpot,0)+'% ('+fmt(M.gpot,0)+'% real + '+fmt(M.target,0)+'% inflação)';
+  $('ngRate').textContent=fmt(M.target+M.gpot,0)+'%';
+  $('pBuyL').textContent=M.cur+' 100 hoje compram';
+  $('fxCard').hidden=!BR; $('fCartaW').hidden=!BR;
+  $('kCapL').textContent=BR?'Índice de Basileia':'Capital dos bancos';
+  $('miniExpL').textContent=BR?'Focus 12m':'Expectativa';
+  $('govMax').textContent=fmt(M.govStep,2);$('govCap').textContent=M.realCap;
+  $('fgSel').options[0].textContent='Manter os juros altos até a inflação cair abaixo de '+fmt(M.target+1,0)+'%';
+  const ss=$('scenSel');ss.innerHTML='';for(const k in S.SCEN[M.id]){const o=document.createElement('option');o.value=k;o.textContent=S.SCEN[M.id][k].name;ss.appendChild(o);}ss.value=cfg.scen;
+  $('modelSel').value=cfg.model;$('oCredit').checked=cfg.credit;$('oSupply').checked=cfg.supply;$('oEndless').checked=!!cfg.endless;
+  $('scenLabel').textContent=S.SCEN[M.id][cfg.scen].name;
+  const gb=$('govBox');gb.innerHTML='';
+  for(const k of S.GOV_BY[M.id]){const g=S.GOV[k];const b=document.createElement('button');b.type='button';b.dataset.k=k;
+    b.innerHTML='<b>'+g.name+'</b><span>'+g.desc+'</span><em>'+g.fx+'</em>';b.addEventListener('click',()=>queueGov(k,b));gb.appendChild(b);}
+  $('ver').textContent=S.VERSION;
+  drawGuil();
+}
+function queueGov(k,b){if(!st||st.over)return;const i=pend.gov.indexOf(k);
+  if(i>=0){pend.gov.splice(i,1);}else pend.gov.push(k);renderGov();}
+function renderGov(){document.querySelectorAll('#govBox button').forEach(b=>{const on=pend.gov.indexOf(b.dataset.k)>=0;
+  b.style.borderColor=on?'var(--gold)':'';b.querySelector('em').textContent=on?'Agendado para o próximo mês · clique para cancelar':S.GOV[b.dataset.k].fx;b.disabled=!!st.over;});}
+
+/* ---------- decisões ---------- */
+function currentDecision(){
+  const M=st.M;let i=parseFloat($('rate').value);
+  if($('apTaylor').checked)i=S.taylor(st,$('apGov').checked);
+  else if($('apNGDP').checked)i=S.ngdp(st,$('ngRule').value,$('apGov').checked);
+  if(!S.rateOpen(st))i=st.i;
+  return {i,qe:parseInt($('qe').value,10)/100,elf:$('fElf').checked,ccyb:$('fCcyb').checked,g:pend.g,gov:pend.gov.slice()};
+}
+function advance(){
+  if(!st||st.over){stopAuto();return;}
+  const d=currentDecision();st.dec.push(S.packDec(d));S.step(st,d);pend={g:null,gov:[]};
+  $('rate').value=st.i;render();
+  if(st.over)stopAuto();
+}
+function startAuto(){if(timer||!st||st.over)return;timer=setInterval(advance,$('oFast').checked?220:600);$('btnAuto').textContent='❚❚ Pausar';$('btnAuto').classList.add('on');}
+function stopAuto(){if(timer){clearInterval(timer);timer=null;}$('btnAuto').textContent='▶ Rodar automático';$('btnAuto').classList.remove('on');}
+
+/* ---------- render ---------- */
+function chip(el,txt,cls){el.textContent=txt;el.className='chip '+cls;}
+function render(){
+  const s=st,M=s.M,T=M.target,B=M.band,h=s.H[s.H.length-1];
+  const yr=Math.floor(s.m/12)+1,mon=S.MESES[s.m%12];
+  $('stMonth').textContent=mon+' · Ano '+yr;$('deskMonth').textContent=mon+' · Ano '+yr;
+  const term=s.cfg.endless?null:M.term;
+  $('stProg').textContent=s.m+(term?' / '+term:' · sem fim');$('stBar').style.width=term?Math.min(100,100*s.m/term)+'%':'100%';
+  $('stScore').textContent=s.scoreN?fmt(S.score(s),0)+' pts':'0 pts';
+  const dpi=s.piYoY-T;
+  if(Math.abs(dpi)<=0.5)chip($('stPrice'),'Na meta','good');
+  else if(Math.abs(dpi)<=B)chip($('stPrice'),dpi>0?'Acima do centro, na banda':'Abaixo do centro, na banda','warn');
+  else chip($('stPrice'),dpi>0?'Inflação fora da meta':'Inflação baixa demais','bad');
+  const du=s.u-s.ustar;
+  if(Math.abs(du)<=0.5)chip($('stEmp'),'Pleno emprego','good');
+  else if(du>0)chip($('stEmp'),du>1.5?'Desemprego alto':'Folga no mercado de trabalho',du>1.5?'bad':'warn');
+  else chip($('stEmp'),du<-1.2?'Mercado superaquecido':'Mercado apertado','warn');
+  if(s.gy<0)chip($('stGrow'),'Recessão','bad');else if(s.gy>M.gpot+2)chip($('stGrow'),'Superaquecido','warn');else if(s.gy<M.gpot-1.2)chip($('stGrow'),'Fraco','warn');else chip($('stGrow'),'Saudável','good');
+
+  // banner
+  if(s.over){$('bannerWrap').hidden=false;$('bannerTitle').textContent=s.over.t;$('bannerText').textContent=s.over.x;}else $('bannerWrap').hidden=true;
+
+  // desk
+  const open=S.rateOpen(s),BR=!!M.copom;
+  $('copomBox').hidden=!BR;
+  if(BR){$('copomBox').classList.toggle('open',open);$('copomText').textContent=open?'O Copom se reúne este mês':'Sem reunião do Copom este mês';
+    const n=S.nextCopom(s);$('copomNext').textContent=open?'decida a Selic':'próxima: '+S.MESES[(s.m+n)%12];}
+  const auto=$('apTaylor').checked||$('apNGDP').checked;
+  const lock=!open||auto||!!s.over;
+  $('rate').disabled=lock;$('rateUp').disabled=lock;$('rateDown').disabled=lock;
+  $('rateBig').textContent=fmt(parseFloat($('rate').value),2)+'%';
+  $('rateHint').textContent=s.over?'Partida encerrada.':auto?'O piloto automático decide os juros ao avançar.':!open?'A Selic só muda nas reuniões do Copom. Avance até a próxima.':'Neutro hoje: '+fmt(s.rstar+s.piE,2)+'% (juro real neutro '+fmt(s.rstar,1)+'% + expectativa '+fmt(s.piE,1)+'%).';
+  const q=parseInt($('qe').value,10);$('qeVal').textContent=q===0?'Neutro':(q>0?'QE ':'QT ')+Math.abs(q)+'%';
+  $('btnStep').disabled=!!s.over;
+  $('mExp').textContent=pct(s.piE);$('mCred').textContent=fmt(s.C*100,0)+'%';
+  $('mGap').textContent=sg(s.y)+'%';$('mRgap').textContent=sg(s.i-s.piE-s.rstar,2);
+  const fr=Math.min(1,s.F/1.2);$('fragMk').style.left=(fr*100)+'%';
+  $('fragTxt').textContent=s.F<0.45?'Baixa':s.F<0.75?'Elevada':'Crítica';
+  $('fgState').textContent=s.guid?(s.guid.type==='up'?'Em vigor desde o mês '+s.guid.start+': juros altos até a inflação ceder.':'Em vigor desde o mês '+s.guid.start+': juros baixos por 12 meses.'):pend.g?'Anúncio agendado para a próxima decisão.':'Nenhum compromisso em vigor.';
+
+  // valores
+  $('vInf').textContent=pct(s.pi3)+' · 12m '+pct(s.piYoY);$('vU').textContent=pct(s.u);
+  $('vR').textContent=pct(s.i,2)+' · real '+pct(s.i-s.piE);$('vG').textContent=pct(s.gy);
+  $('vCPI').textContent=fmt(s.CPI,1);$('vY').textContent=fmt(s.Y,1);$('vNG').textContent=fmt(h.NG,1);$('vFX').textContent=fmt(s.FX,1);
+  $('vWedge').textContent='diferença '+sg(s.piYoY-s.defYoY)+' p.p.';$('vCurve').textContent=pct(s.i2,1)+' · '+pct(s.y10,1);
+  const yrs=s.m/12;
+  $('pSince').textContent=sg(s.CPI-100)+'%';$('p12').textContent=s.m>=12?pct(s.piYoY):'—';
+  $('pAvg').textContent=s.m>=6?pct((Math.pow(s.CPI/100,1/yrs)-1)*100):'—';
+  $('pGap').textContent=sg((s.CPI/h.cpiPath-1)*100)+'%';$('pBuy').textContent=M.cur+' '+fmt(10000/s.CPI,2);
+  $('ySince').textContent=sg(s.Y-100)+'%';$('y12').textContent=s.m>=12?pct(s.gy):'—';
+  $('yAvg').textContent=s.m>=6?pct((Math.pow(s.Y/100,1/yrs)-1)*100):'—';
+  $('yScar').textContent=sg((s.P*Math.exp(0)/(h.trend*s.H[0].P/100)-1)*100)+'%';
+  $('yLost').textContent=fmt(s.lost,1)+'% de um ano';
+  // mercados
+  $('kY2').textContent=pct(s.i2,2);$('kY10').textContent=pct(s.y10,2);$('kTP').textContent=sg(s.tp,2)+' p.p.';$('kSP').textContent=pct(s.sp,2);
+  $('kCap').textContent=pct(s.bankCap,1);$('kCap').className=s.bankCap<9?'bad':s.bankCap<10.5?'warn':'';
+  const prev3=s.iA[S.OFF+s.m-3];$('kHike').textContent=sg(s.i-prev3,2)+' p.p.';
+  const c=s.contrib,rows=[['Política',c.pol],['Mercados',c.mkt],['Crédito',c.cred],['Governo',c.fis],['Outros',c.oth]];
+  $('decomp').innerHTML=rows.map(([n,v])=>{const w=Math.min(50,Math.abs(v)/4*50);const l=v>=0?50:50-w;
+    return '<div><span>'+n+'</span><span class="track"><i style="left:'+l+'%;width:'+w+'%;background:'+(v>=0?'var(--s-r)':'var(--s-inf)')+'"></i></span><span class="mono" style="text-align:right">'+sg(v,1)+'</span></div>';}).join('');
+  $('fPot').textContent=pct(s.gpot-(s.laborM>0?0.6:0));$('fUs').textContent=pct(s.ustar);$('fNeu').textContent=pct(s.rstar+s.piE,2);$('fCarta').textContent=s.cartas;
+  $('gameCode').textContent=S.encode(cfg);
+  renderGov();renderLog();drawAll();
+}
+function renderLog(){
+  const L=st.logs.slice(-120).reverse();
+  $('log').innerHTML=L.map(e=>'<li class="'+e.kind+'"><time>'+S.MESES[e.m%12]+' · A'+(Math.floor(e.m/12)+1)+'</time><span>'+e.text+'</span></li>').join('');
+  $('logCount').textContent=st.logs.length+' registros';
+}
+
+/* ---------- gráficos ---------- */
+function niceStep(range){const raw=range/4;const p=Math.pow(10,Math.floor(Math.log10(raw)));const n=raw/p;return (n<1.5?1:n<3?2:n<7?5:10)*p;}
+let CSS=null;const col=n=>CSS.getPropertyValue(n).trim();
+function chart(id,o){
+  const cv=$(id);if(!cv||cv.closest('[hidden]'))return;
+  const W=cv.clientWidth,Hh=cv.clientHeight;if(!W)return;
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(Hh*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(Hh*dpr);}
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,Hh);
+  const L=38,R=8,T=8,B=18,pw=W-L-R,ph=Hh-T-B,xmax=o.xmax;
+  let lo=Infinity,hi=-Infinity;const see=v=>{if(isFinite(v)){if(v<lo)lo=v;if(v>hi)hi=v;}};
+  o.series.forEach(se=>se.v.forEach(see));(o.refs||[]).forEach(see);if(o.band){see(o.band[0]);see(o.band[1]);}
+  const span=o.minSpan||2;if(hi-lo<span){const mid=(hi+lo)/2;lo=mid-span/2;hi=mid+span/2;}
+  const stp=niceStep(hi-lo);lo=Math.floor(lo/stp)*stp;hi=Math.ceil(hi/stp)*stp;if(hi-lo<1e-9)hi=lo+stp;
+  const X=m=>L+pw*m/xmax,Y=v=>T+ph*(1-(v-lo)/(hi-lo));
+  c.font='10px "IBM Plex Mono", ui-monospace, monospace';c.textBaseline='middle';
+  // grade
+  c.strokeStyle=col('--rule');c.lineWidth=1;c.fillStyle=col('--muted');c.textAlign='right';
+  for(let v=lo;v<=hi+1e-9;v+=stp){const y=Math.round(Y(v))+.5;c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();
+    c.fillText((Math.abs(stp)<1?fmt(v,1):fmt(v,0)),L-5,y);}
+  c.textAlign='center';c.textBaseline='top';const ys=xmax>150?24:12;
+  for(let m=0;m<=xmax;m+=ys){const x=X(m);c.fillText('A'+(m/12+1),Math.min(Math.max(x,L+8),W-R-8),Hh-B+5);}
+  if(o.band){c.fillStyle=col('--band');c.fillRect(L,Y(o.band[1]),pw,Y(o.band[0])-Y(o.band[1]));}
+  if(o.zero&&lo<0&&hi>0){c.strokeStyle=col('--muted');c.setLineDash([]);c.beginPath();c.moveTo(L,Y(0));c.lineTo(W-R,Y(0));c.stroke();}
+  (o.hl||[]).forEach(h=>{c.strokeStyle=col(h.c);c.setLineDash([3,3]);c.beginPath();c.moveTo(L,Y(h.v));c.lineTo(W-R,Y(h.v));c.stroke();c.setLineDash([]);});
+  o.series.forEach(se=>{const v=se.v,k=col(se.c);
+    if(se.dots){c.fillStyle=k;c.globalAlpha=.45;v.forEach((y,m)=>{if(isFinite(y)){c.beginPath();c.arc(X(m),Y(y),1.6,0,7);c.fill();}});c.globalAlpha=1;return;}
+    c.strokeStyle=k;c.lineWidth=se.w||1.8;c.setLineDash(se.dash?[4,3]:[]);c.lineJoin='round';c.beginPath();let on=false;
+    v.forEach((y,m)=>{if(!isFinite(y)){on=false;return;}const px=X(m),py=Y(clampV(y,lo,hi));if(!on){c.moveTo(px,py);on=true;}else c.lineTo(px,py);});c.stroke();c.setLineDash([]);
+    if(se.end){const m=v.length-1;if(isFinite(v[m])){c.fillStyle=k;c.beginPath();c.arc(X(m),Y(v[m]),3.2,0,7);c.fill();c.strokeStyle=col('--surface');c.lineWidth=1.5;c.stroke();}}
+  });
+}
+const clampV=(v,a,b)=>Math.max(a,Math.min(b,v));
+function drawAll(){
+  if(!st)return;CSS=getComputedStyle(document.documentElement);
+  const H=st.H,M=st.M,T=M.target,xmax=Math.max(st.cfg.endless?Math.max(120,st.m+12):M.term,st.m);
+  const g=k=>H.map(h=>h[k]);
+  chart('cInf',{xmax,band:[T-M.band,T+M.band],hl:[{v:T,c:'--gold'}],minSpan:4,series:[{v:g('pm'),c:'--s-inf',dots:1},{v:g('piE'),c:'--s-exp',dash:1},{v:g('pi3'),c:'--s-inf',w:2.2,end:1}]});
+  chart('cU',{xmax,minSpan:3,series:[{v:g('ustar'),c:'--s-ref',dash:1},{v:g('u'),c:'--s-u',w:2.2,end:1}]});
+  chart('cR',{xmax,zero:1,minSpan:4,series:[{v:g('neu'),c:'--s-ref',dash:1},{v:g('rr'),c:'--s-u'},{v:g('i'),c:'--s-r',w:2.2,end:1}]});
+  chart('cG',{xmax,zero:1,minSpan:4,series:[{v:g('gp'),c:'--s-ref',dash:1},{v:H.map(h=>h.m>=1?h.gy:NaN),c:'--s-r',w:2.2,end:1}]});
+  chart('cCPI',{xmax,minSpan:4,series:[{v:g('cpiPath'),c:'--s-exp',dash:1},{v:g('CPI'),c:'--s-inf',w:2.2,end:1}]});
+  chart('cY',{xmax,minSpan:4,series:[{v:g('trend'),c:'--s-4',dash:1},{v:H.map(h=>h.P*100/H[0].P),c:'--s-ref',dash:1},{v:g('Y'),c:'--s-r',w:2.2,end:1}]});
+  chart('cNG',{xmax,minSpan:4,series:[{v:g('ngPath'),c:'--s-ref',dash:1},{v:g('NG'),c:'--s-4',w:2.2,end:1}]});
+  chart('cDef',{xmax,zero:1,minSpan:4,series:[{v:g('defYoY'),c:'--s-u'},{v:g('piYoY'),c:'--s-inf',w:2.2,end:1}]});
+  if(M.fx)chart('cFX',{xmax,minSpan:10,hl:[{v:100,c:'--s-ref'}],series:[{v:g('FX'),c:'--s-u',w:2.2,end:1}]});
+  chart('cCurve',{xmax,zero:1,minSpan:4,series:[{v:g('y10'),c:'--s-4'},{v:g('i2'),c:'--s-u'},{v:g('i'),c:'--s-r',w:2.2,end:1}]});
+}
+
+/* ---------- gravura (guilloché) ---------- */
+function drawGuil(){
+  const cv=$('guil');const W=cv.clientWidth,Hh=cv.clientHeight;if(!W)return;const dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=Hh*dpr;const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,Hh);
+  CSS=getComputedStyle(document.documentElement);c.strokeStyle=col('--guil');c.lineWidth=.7;
+  const cx=W-Math.min(W*0.22,220),cy=Hh*0.5,R0=Math.min(170,Hh*1.2);
+  const seed=st?st.cfg.seed%7:3;
+  for(let k=0;k<26;k++){c.beginPath();const ph=k*Math.PI/13;
+    for(let t=0;t<=Math.PI*2+0.01;t+=0.01){const r=R0*(0.55+0.18*Math.sin((9+seed)*t+ph)+0.08*Math.cos(23*t-ph*2));
+      const x=cx+r*Math.cos(t),y=cy+r*Math.sin(t)*0.82;t===0?c.moveTo(x,y):c.lineTo(x,y);}c.stroke();}
+  for(let k=0;k<7;k++){c.beginPath();for(let x=0;x<=W;x+=4){const y=Hh-10-k*4+3*Math.sin(x/18+k*0.9);x===0?c.moveTo(x,y):c.lineTo(x,y);}c.stroke();}
+}
+
+/* ---------- comparar ---------- */
+function compare(){
+  const upto=st.m>=12?st.m:(st.cfg.endless?120:st.M.term);
+  const rule=$('ngRule').value;
+  const rows=[['Você',st.m>=12?S.simulate(cfg,st.dec,'you',upto):null,'you'],
+    ['Regra de Taylor',S.simulate(cfg,st.dec,'taylor',upto)],
+    ['Meta de PIB nominal',S.simulate(cfg,st.dec,'ngdp',upto,rule)],
+    ['Juros parados',S.simulate(cfg,st.dec,'hold',upto)]];
+  $('cmpTbl').tBodies[0].innerHTML=rows.map(([n,r,c])=>'<tr class="'+(c||'')+'"><td>'+n+'</td>'+(r?'<td>'+fmt(r.score,0)+'</td><td>'+pct(r.pi)+'</td><td>'+pct(r.u)+'</td><td>'+fmt(r.lost,1)+'%</td>':'<td colspan="4" style="text-align:right;color:var(--muted)">jogue ao menos 12 meses</td>')+'</tr>').join('')
+    +'<tr><td colspan="5" style="text-align:left;color:var(--muted);font-size:.74rem">Comparação até o mês '+upto+'. PIB perdido = soma dos hiatos negativos, em % de um ano de PIB.</td></tr>';
+}
+
+/* ---------- copiar ---------- */
+function copy(text,ok){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast(ok),()=>fallback());}else fallback();
+  function fallback(){const t=$('loadBox');t.value=text;t.focus();t.select();toast('Texto selecionado na caixa abaixo; copie com Ctrl+C.');}}
+
+/* ---------- eventos ---------- */
+$('modeBR').addEventListener('click',()=>{if(st.M.id!=='BR'){pref('bcsim-mode','BR');start(newCfg('BR','h25'));}});
+$('modeCL').addEventListener('click',()=>{if(st.M.id!=='CL'){pref('bcsim-mode','CL');start(newCfg('CL','calm'));}});
+$('rate').addEventListener('input',()=>{$('rateBig').textContent=fmt(parseFloat($('rate').value),2)+'%';});
+$('rateUp').addEventListener('click',()=>{const r=$('rate');r.value=Math.min(+r.max,+r.value+0.25);r.dispatchEvent(new Event('input'));});
+$('rateDown').addEventListener('click',()=>{const r=$('rate');r.value=Math.max(+r.min,+r.value-0.25);r.dispatchEvent(new Event('input'));});
+$('qe').addEventListener('input',()=>{const q=parseInt($('qe').value,10);$('qeVal').textContent=q===0?'Neutro':(q>0?'QE ':'QT ')+Math.abs(q)+'%';});
+$('btnStep').addEventListener('click',advance);
+$('btnAuto').addEventListener('click',()=>timer?stopAuto():startAuto());
+$('oFast').addEventListener('change',()=>{if(timer){stopAuto();startAuto();}});
+$('btnRestart').addEventListener('click',()=>start(Object.assign({},cfg)));
+$('btnReplay').addEventListener('click',()=>{start(Object.assign({},cfg));toast('Mesma economia, do mês zero.');});
+$('btnNew').addEventListener('click',()=>start(Object.assign({},cfg,{seed:randSeed()})));
+$('btnNew2').addEventListener('click',()=>start(Object.assign({},cfg,{seed:randSeed(),endless:false})));
+$('btnEndless').addEventListener('click',()=>{cfg.endless=true;st.cfg.endless=true;st.over=null;$('oEndless').checked=true;render();});
+['apTaylor','apNGDP'].forEach(id=>$(id).addEventListener('change',e=>{if(e.target.checked){(id==='apTaylor'?$('apNGDP'):$('apTaylor')).checked=false;}render();}));
+$('fgAnn').addEventListener('click',()=>{pend.g=$('fgSel').value;render();toast('Anúncio entra com a próxima decisão.');});
+$('fgWd').addEventListener('click',()=>{if(!st.guid){toast('Não há compromisso em vigor.');return;}pend.g='withdraw';render();});
+function cfgChange(){start({mode:cfg.mode,scen:$('scenSel').value,model:$('modelSel').value,credit:$('oCredit').checked,supply:$('oSupply').checked,seed:cfg.seed,endless:$('oEndless').checked});}
+['scenSel','modelSel','oCredit','oSupply'].forEach(id=>$(id).addEventListener('change',cfgChange));
+$('oEndless').addEventListener('change',()=>{cfg.endless=$('oEndless').checked;st.cfg.endless=cfg.endless;if(cfg.endless)st.over=null;render();});
+$('btnCopyCode').addEventListener('click',()=>copy(S.encode(cfg),'Código copiado.'));
+$('btnExport').addEventListener('click',()=>{const txt=JSON.stringify({v:S.VERSION,code:S.encode(cfg),dec:st.dec});$('loadBox').value=txt;copy(txt,'Registro copiado ('+st.dec.length+' decisões).');});
+$('btnLoad').addEventListener('click',()=>{const t=$('loadBox').value.trim();if(!t){toast('Cole um código ou registro primeiro.');return;}
+  try{if(t[0]==='{'){const o=JSON.parse(t);const c=S.decode(o.code);if(!c||!Array.isArray(o.dec))throw 0;start(c,o.dec);toast('Partida refeita: '+o.dec.length+' meses.');}
+    else{const c=S.decode(t);if(!c)throw 0;start(c);toast('Economia carregada.');}}
+  catch(e){toast('Não reconheci esse código. Formato: BR-h25-RCS-K3J9X.');}});
+$('btnCompare').addEventListener('click',compare);
+document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;
+  if(e.key==='n'||e.key==='N'){advance();}});
+
+let raf=0;const redraw=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{drawAll();drawGuil();});};
+window.addEventListener('resize',redraw);
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);}catch(e){}
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class']});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
+
+const m0=pref('bcsim-mode')==='CL'?'CL':'BR';
+start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:true,supply:true,seed:randSeed(),endless:false});
+})();
+</script>
+
+</body></html>
