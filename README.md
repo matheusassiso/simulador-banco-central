@@ -20,3 +20,26 @@ Seção "Ranking" no fim da página. Sem configuração, o ranking fica só no n
 3. Preencha `url` e `anonKey` em `config.js` (a anon key é pública; a segurança vem das regras RLS).
 
 O ranking reexecuta o registro de decisões de cada partida e mostra a pontuação verificada, não a declarada.
+[INFO] Recording command outcome: printf
+
+[OK] Command outcome recorded
+
+## Modelos e opções (v2.0)
+
+Modelos: Clássico + finanças (padrão), Clássico sem finanças, Aprendizado, Aprendizado + finanças, Âncora, Âncora + finanças e Livro-texto. Eles mudam como as expectativas se formam e se há setor financeiro.
+
+Opções (só em modelos com setor financeiro): ciclo de crédito, ciclo de crédito + reparo de dívida, choques de oferta por causa e combinações.
+
+Também: previsão da equipe de 24 meses, famílias e empresas, condições financeiras extras, repetição contrafactual no painel e estatística de 3 anos nos monitores.
+
+Implementação própria, inspirada nas ideias de simuladores de política monetária; não usa código de terceiros.
+
+## Modelos e opções (v2.0)
+
+Modelos: Clássico + finanças (padrão), Clássico sem finanças, Aprendizado, Aprendizado + finanças, Âncora, Âncora + finanças e Livro-texto. Eles mudam como as expectativas se formam e se há setor financeiro.
+
+Opções (só em modelos com setor financeiro): ciclo de crédito, ciclo de crédito + reparo de dívida, choques de oferta por causa e combinações.
+
+Também: previsão da equipe de 24 meses, famílias e empresas, condições financeiras extras, repetição contrafactual no painel e estatística de 3 anos nos monitores.
+
+Implementação própria, inspirada nas ideias de simuladores de política monetária; não usa código de terceiros.
