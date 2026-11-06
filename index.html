@@ -164,6 +164,53 @@ tr.you td{font-weight:600}
 footer{border-top:1px solid var(--rule);color:var(--muted);font-size:.78rem}
 footer .wrap{padding-block:16px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== Visual 2.0: mais leve, macio e arejado ===== */
+:root{--paper:#f2f5f1;--surface:#fff;--sunk:#e8eee8;--rule:#dbe3db;--r:14px;
+  --shadow:0 1px 2px rgba(18,38,28,.06),0 10px 28px -16px rgba(18,38,28,.22)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#0c1311;--surface:#141d1a;--sunk:#0a100e;--rule:#26332e;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -16px rgba(0,0,0,.7)}}
+:root[data-theme="dark"]{--paper:#0c1311;--surface:#141d1a;--sunk:#0a100e;--rule:#26332e;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -16px rgba(0,0,0,.7)}
+body{font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mast{border-bottom:0;background:linear-gradient(135deg,var(--surface) 0%,var(--sunk) 100%)}
+.mast .wrap{padding-block:30px 26px}
+.mast h1{font-weight:600;letter-spacing:-.005em}
+.seg{box-shadow:var(--shadow)}
+.seg button{transition:background .2s,color .2s}
+.status{background:var(--surface);border-bottom:1px solid var(--rule)}
+.status .wrap{gap:4px}
+.cell{padding:14px 16px 14px 0}
+.cell .v{font-size:1.25rem}
+.tabs{position:sticky;top:0;z-index:15;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+.tabs a{white-space:nowrap;padding:7px 14px;border-radius:999px;color:var(--muted);text-decoration:none;font-weight:500;font-size:.85rem;transition:background .2s,color .2s}
+.tabs a:hover{background:var(--sunk);color:var(--ink)}
+html{scroll-behavior:smooth}
+section[id],div[id=painel]{scroll-margin-top:60px}
+.layout{gap:28px;padding-block:26px}
+.card,.desk,.banner,.log{border-radius:var(--r);box-shadow:var(--shadow);border-color:transparent}
+.card{padding:16px 16px 12px}
+.card canvas{height:190px;margin-top:8px}
+.card h3{font-size:1rem}
+.desk{padding:20px;gap:18px;top:60px;max-height:calc(100vh - 72px)}
+.rate .big{font-size:2.5rem;font-weight:500;letter-spacing:-.02em}
+.step{width:44px;height:44px;transition:transform .1s,background .2s}
+.step:active{transform:scale(.94)}
+.btn{border-radius:10px;padding:10px 14px;transition:border-color .2s,transform .1s,box-shadow .2s;background:var(--surface)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.primary{box-shadow:0 6px 16px -8px var(--accent);border-radius:12px}
+.gov button{border-radius:var(--r);box-shadow:var(--shadow);border-color:transparent;transition:transform .15s}
+.gov button:hover:not(:disabled){transform:translateY(-2px)}
+.band-sec{padding-block:14px 30px}
+.band-sec>.wrap>h2,.sec-head h2{font-size:1.3rem}
+select,input,textarea{border-radius:10px}
+.mini div{border-radius:12px;background:var(--surface);border-color:var(--rule)}
+.copom{border-radius:12px}
+.meter{height:10px;border-radius:5px}
+.stats{gap:12px 16px}
+.stats b{font-size:1rem}
+table th{padding-block:8px}
+footer{margin-top:10px}
+@media (max-width:640px){.mast .wrap{padding-block:22px 18px}.card canvas{height:170px}.rate .big{font-size:2.1rem}}
 </style>
 
 <header class="mast">
@@ -192,6 +239,10 @@ footer .wrap{padding-block:16px}
   </div>
 </section>
 
+<nav class="tabs" aria-label="Seções"><div class="wrap">
+  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
+</div></nav>
+
 <div class="wrap" id="bannerWrap" hidden>
   <div class="banner">
     <div><strong id="bannerTitle">Mandato encerrado</strong><div id="bannerText" class="hint"></div></div>
@@ -202,7 +253,8 @@ footer .wrap{padding-block:16px}
 <main class="wrap layout">
   <div style="min-width:0;display:flex;flex-direction:column;gap:22px">
     <section>
-      <div class="sec-head"><h2>Painel econômico</h2><span class="label" id="scenLabel">—</span></div>
+      <div class="sec-head" id="painel"><h2>Painel econômico</h2><span class="label" id="scenLabel">—</span></div>
+      <div class="banner" id="cfBar" hidden style="margin:0 0 12px;border-left-color:var(--s-4)"><div><strong id="cfName">Repetição contrafactual</strong><div class="hint">A linha tracejada roxa mostra a inflação e o desemprego da mesma economia sob outra regra, com os mesmos choques.</div></div><button class="btn" id="cfClose">Fechar comparação</button></div>
       <div class="grid2">
         <div class="card"><h3><span id="tInf">Inflação (3 meses anualizada)</span><span class="num" id="vInf">—</span></h3>
           <canvas id="cInf"></canvas>
@@ -223,7 +275,22 @@ footer .wrap{padding-block:16px}
       </div>
     </section>
 
-    <section>
+    <section id="previsao">
+      <div class="sec-head"><h2>Previsão da equipe</h2><span class="label">24 meses · sem novos choques</span></div>
+      <div class="grid2">
+        <div class="card"><h3><span id="tFcPi">Inflação em 12 meses</span><span class="num" id="vFcPi">—</span></h3>
+          <canvas id="cFcPi"></canvas>
+          <div class="legend"><span style="color:var(--s-inf)"><i></i>Seus ajustes mantidos</span><span style="color:var(--s-inf)"><i class="d"></i>Piloto de Taylor</span><span><i class="blk"></i><span id="lgFcBand">Banda da meta</span></span></div>
+        </div>
+        <div class="card"><h3><span>Desemprego</span><span class="num" id="vFcU">—</span></h3>
+          <canvas id="cFcU"></canvas>
+          <div class="legend"><span style="color:var(--s-u)"><i></i>Seus ajustes mantidos</span><span style="color:var(--s-u)"><i class="d"></i>Piloto de Taylor</span></div>
+        </div>
+      </div>
+      <p class="hint">Projeção determinística a partir de hoje: os juros ficam onde você deixou (ou o piloto de Taylor assume) e nenhum choque novo acontece. Serve para ver para onde a economia já está indo, não como previsão do que vai acontecer.</p>
+    </section>
+
+    <section id="monitores">
       <div class="sec-head"><h2>Monitores de nível</h2><span class="label">índices · 100 = dia da posse</span></div>
       <div class="grid2">
         <div class="card"><h3><span>Nível de preços acumulado</span><span class="num" id="vCPI">100,0</span></h3>
@@ -232,6 +299,7 @@ footer .wrap{padding-block:16px}
           <div class="stats">
             <div><small>Desde a posse</small><b id="pSince">—</b></div>
             <div><small>Últimos 12 meses</small><b id="p12">—</b></div>
+            <div><small>Últimos 3 anos (a.a.)</small><b id="p36">—</b></div>
             <div><small>Média anual</small><b id="pAvg">—</b></div>
             <div><small>Desvio da trajetória</small><b id="pGap">—</b></div>
             <div><small id="pBuyL">R$ 100 hoje compram</small><b id="pBuy">—</b></div>
@@ -246,6 +314,7 @@ footer .wrap{padding-block:16px}
             <div><small>Média anual</small><b id="yAvg">—</b></div>
             <div><small>Potencial vs tendência</small><b id="yScar">—</b></div>
             <div><small>Perdido em recessões</small><b id="yLost">—</b></div>
+            <div><small>Últimos 3 anos (a.a.)</small><b id="y36">—</b></div>
           </div>
         </div>
         <div class="card"><h3><span>PIB nominal e trajetória</span><span class="num" id="vNG">100,0</span></h3>
@@ -347,12 +416,10 @@ footer .wrap{padding-block:16px}
         <label class="label" for="scenSel">Cenário</label>
         <select id="scenSel"></select>
         <label class="label" for="modelSel">Modelo</label>
-        <select id="modelSel">
-          <option value="R">Realista · não linear, cicatrizes e crises</option>
-          <option value="L">Livro-texto · linear, sem crises</option>
-        </select>
-        <label class="check"><input type="checkbox" id="oCredit" checked><span><b>Ciclo de crédito</b> · juro real baixo por muito tempo acumula fragilidade</span></label>
-        <label class="check"><input type="checkbox" id="oSupply" checked><span><b>Choques aleatórios</b> · petróleo, safra, humor global</span></label>
+        <select id="modelSel"></select>
+        <label class="label" for="optSel">Opções da economia</label>
+        <select id="optSel"></select>
+        <p class="hint" id="optHint">Ciclo de crédito: juro real baixo por muito tempo infla o crédito e os ativos e eleva o risco de crise. Reparo de dívida: após a crise, as famílias poupam para quitar dívidas. Oferta por causa: choques de alimentos e energia pesam mais em orçamentos apertados.</p>
         <label class="check"><input type="checkbox" id="oEndless"><span><b>Modo sem fim</b> · sem prazo de mandato nem demissão</span></label>
         <label class="check"><input type="checkbox" id="oFast"><span><b>Reprodução rápida</b> · 220 ms por mês no modo automático</span></label>
       </fieldset>
@@ -360,9 +427,9 @@ footer .wrap{padding-block:16px}
   </aside>
 </main>
 
-<section class="band-sec">
+<section class="band-sec" id="mercados">
   <div class="wrap">
-    <h2>Mercados e bancos</h2>
+    <h2>Mercados, bancos e famílias</h2>
     <p class="intro">O que o mercado espera da sua política, quanto custa o crédito e quanto os bancos aguentam.</p>
     <div class="grid2">
       <div class="card">
@@ -374,7 +441,28 @@ footer .wrap{padding-block:16px}
           <div><small>Spread de crédito</small><b id="kSP">—</b></div>
           <div><small id="kCapL">Índice de Basileia</small><b id="kCap">—</b></div>
           <div><small>Variação do juro em 3 meses</small><b id="kHike">—</b></div>
+          <div><small>Financiamento imobiliário (30a)</small><b id="kMort">—</b></div>
+          <div><small>Vagas por desempregado</small><b id="kVac">—</b></div>
+          <div><small>Prêmio de risco de inflação</small><b id="kIRP">—</b></div>
+          <div><small>Risco de crise em 12 meses</small><b id="kRisk">—</b></div>
+          <div><small>Dívida pública (% do PIB)</small><b id="kDebt">—</b></div>
+          <div><small>Prêmio de risco soberano</small><b id="kPrem">—</b></div>
+          <div><small>Lacuna de crédito (p.p. da renda)</small><b id="kCG">—</b></div>
+          <div><small>Preços de ativos vs tendência</small><b id="kAP">—</b></div>
         </div>
+        <p class="hint" id="kHint"></p>
+      </div>
+      <div class="card" id="hhCard">
+        <h3><span>Famílias e empresas</span><span class="label">dia da posse = 100</span></h3>
+        <div class="stats" style="border-top:0;margin-top:4px;padding-top:0">
+          <div><small>Renda real das famílias</small><b id="hInc">—</b></div>
+          <div><small>Colchão de poupança (meses de renda)</small><b id="hBuf">—</b></div>
+          <div><small>Essenciais no orçamento apertado</small><b id="hShare">—</b></div>
+          <div><small>Margem das empresas</small><b id="hMar">—</b></div>
+          <div><small>Capacidade perdida por escassez e apagões</small><b id="hCap">—</b></div>
+          <div><small>Pressão de custos (choque de oferta)</small><b id="hEss">—</b></div>
+        </div>
+        <p class="hint">Preços de alimentos e energia pesam mais para quem tem orçamento apertado. Com a opção de choques de oferta ligada, isso também derruba a demanda.</p>
       </div>
       <div class="card">
         <h3><span>De onde vem a demanda</span><span class="label">pontos de hiato</span></h3>
@@ -385,7 +473,7 @@ footer .wrap{padding-block:16px}
   </div>
 </section>
 
-<section class="band-sec">
+<section class="band-sec" id="governo">
   <div class="wrap">
     <h2>Governo · fora do seu controle</h2>
     <p class="intro">Decisões do Executivo e choques que você não escolhe, mas terá de administrar. Use-os para testar sua política. Cada um entra em vigor no próximo mês.</p>
@@ -399,7 +487,7 @@ footer .wrap{padding-block:16px}
   </div>
 </section>
 
-<section class="band-sec">
+<section class="band-sec" id="compartilhar">
   <div class="wrap">
     <h2>Compartilhar, reproduzir e comparar</h2>
     <p class="intro">O código da partida recria a mesma economia com os mesmos choques. O registro de decisões refaz a sua partida mês a mês.</p>
@@ -422,7 +510,30 @@ footer .wrap{padding-block:16px}
   </div>
 </section>
 
-<section class="band-sec">
+<section class="band-sec" id="ranking">
+  <div class="wrap">
+    <div class="sec-head"><h2>Ranking</h2><span class="label" id="rkMode">—</span></div>
+    <p class="intro">Termine o mandato e envie sua partida. O ranking reexecuta o seu registro de decisões e mostra a pontuação verificada, então não dá para inventar nota.</p>
+    <div class="share">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div id="rkAuth" hidden>
+          <div id="rkIn" class="row" style="align-items:stretch"><input id="rkEmail" type="email" placeholder="seu@email.com" autocomplete="email" style="flex:2;padding:8px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper)"><button class="btn" id="rkLogin">Entrar por link</button></div>
+          <div id="rkOut" class="row" hidden><span class="hint" style="flex:2;align-self:center">Conectado: <b id="rkWho"></b></span><button class="btn" id="rkLogout">Sair</button></div>
+        </div>
+        <label class="label" for="rkNick">Apelido no ranking</label>
+        <input id="rkNick" maxlength="24" placeholder="Seu apelido" style="padding:8px;border:1px solid var(--rule);border-radius:var(--r);background:var(--paper)">
+        <button class="btn primary" id="rkSubmit">Enviar esta partida</button>
+        <p class="hint">Só partidas com o mandato concluído. Reenviar o mesmo código substitui o registro anterior.</p>
+      </div>
+      <div class="card">
+        <div class="row" style="align-items:center;margin-bottom:8px"><label class="check" style="flex:2"><input type="checkbox" id="rkAll"><span>Mostrar todos os códigos</span></label><button class="btn" id="rkRefresh" style="flex:none">Atualizar</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Jogador</th><th>Código</th><th>Pontos</th><th>Meses</th></tr></thead><tbody id="rkBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band-sec" id="diario">
   <div class="wrap">
     <div class="sec-head"><h2>Diário de bordo</h2><span class="label" id="logCount">—</span></div>
     <ul class="log" id="log"></ul>
@@ -436,7 +547,7 @@ footer .wrap{padding-block:16px}
 /* ============== MODELO ECONÔMICO (sem DOM) ============== */
 var SIM = (function(){
 'use strict';
-const OFF=12, VERSION='1.0';
+const OFF=12, VERSION='2.0';
 const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const MODES={
   BR:{id:'BR',bank:'Banco Central do Brasil',rate:'Selic',cpi:'IPCA',target:3,band:1.5,ustar:6.5,rstar:5,gpot:2,iMin:2,iMax:30,term:96,tp0:2,inertia:0.3,fx:true,
@@ -451,7 +562,22 @@ const fmt=(x,d)=>x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFracti
 
 function set(s,o){Object.assign(s,o);}
 function addImp(s,amt,months){s.impQ.push({amt,left:months});}
+/* Modelos: fin = setor financeiro (fragilidade, crises); ex = como as expectativas se formam
+   (c = credibilidade, l = aprendizagem adaptativa, a = âncora que só solta com erros persistentes). */
+const MODELS={
+  R:{n:'Clássico + finanças (padrão)',fin:1,ex:'c'},
+  N:{n:'Clássico, sem finanças (v2)',fin:0,ex:'c'},
+  A:{n:'Aprendizado (v3, exp.)',fin:0,ex:'l'},
+  G:{n:'Aprendizado + finanças (exp.)',fin:1,ex:'l'},
+  K:{n:'Âncora (v5.1, exp.)',fin:0,ex:'a'},
+  H:{n:'Âncora + finanças (v5.1, exp.)',fin:1,ex:'a'},
+  L:{n:'Livro-texto · linear, sem crises',fin:0,ex:'c'}
+};
+/* Opções de economia: c = ciclo de crédito, b = reparo de dívida após crise, s = choques de oferta por causa */
+const OPTS={'':'Opções · nenhuma',c:'Opções · ciclo de crédito (exp.)',cb:'Opções · ciclo de crédito + reparo de dívida (exp.)',s:'Opções · choques de oferta por causa (exp.)',cs:'Opções · ciclo de crédito + oferta (exp.)',cbs:'Opções · reparo de dívida + oferta (exp.)'};
 function crisis(s,spJump,demHit,msg){
+  if(!s.fin){s.dem+=demHit*0.5;log(s,msg.replace(/Crise financeira:|Quebra de um grande banco de investimento:/,'Choque de demanda:')+' (modelo sem setor financeiro: só o efeito sobre a demanda).','alert');return;}
+  if(s.cfg.credit){if(s.cfg.repair)s.repairLeft=36;else s.cg*=0.5;s.ap-=15;}
   let k=s.elf?0.5:1; if(!s.elf && s.bankCap<9) k*=1.3;
   s.crisisSp+=spJump*k; s.dem+=demHit*k; s.F*=0.45; s.crisisCool=36; s.crisisLoss+=2.2*k;
   log(s,msg+(s.elf?' A linha de liquidez de emergência evitou vendas forçadas de títulos.':' Sem linha de emergência, bancos vendem títulos às pressas.'),'alert');
@@ -546,6 +672,12 @@ function fin(s){
   s.sp=1.6+0.7*(s.F-0.2)+s.crisisSp+0.15*Math.max(0,-s.y)+(s.ccyb&&s.ccybB<1?0.2:0);
   s.rgap=0.5*(s.i-s.piE-s.rstar)+0.5*(s.i2-s.piE-s.rstar);
   s.bankCap=12+2.5*s.ccybB-0.6*Math.max(0,s.y10-s.y10start)-2*(s.F-0.2)-s.crisisLoss;
+  s.mort=s.y10+1.3+0.5*(s.sp-1.6);
+  s.vac=Math.exp(-0.28*(s.u-s.ustar));
+  s.irp=0.15+0.6*(1-s.C)+0.2*Math.abs(s.piE-M.target);
+  const hz=(s.F>0.75?(s.F-0.75)*0.15:0)+(s.cfg.credit?0.004*Math.max(0,s.cg-3):0);
+  s.crisk=s.fin?100*(1-Math.pow(1-Math.min(hz,0.5),12)):0;
+  s.prem=0.8+0.05*Math.max(0,s.debt-60)+0.6*s.fiscalRisk;
 }
 
 function newState(cfg){
@@ -555,9 +687,12 @@ function newState(cfg){
     rstarBase:M.rstar,rstar:M.rstar,gpot:M.gpot,gpotBoost:0,F:0.2,crisisSp:0,crisisCool:0,crisisLoss:0,fiscal:0,fiscalR:0,fiscalRisk:0,dem:0,
     ed:0,es:0,efx:0,fxShock:0,dep:0,depS:0,FX:100,impQ:[],impNow:0,laborM:0,sMul:1,
     guid:null,elf:false,ccyb:false,ccybB:0,lost:0,scoreSum:0,scoreN:0,outRun:0,cartas:0,hiRun:0,over:null,reconduzido:false,
-    logs:[],H:[],dec:[],ngBase:0,y10start:0,mscore:100,contrib:{pol:0,mkt:0,cred:0,fis:0,oth:0}};
+    logs:[],H:[],dec:[],ngBase:0,y10start:0,mscore:100,contrib:{pol:0,mkt:0,cred:0,fis:0,oth:0},
+    fin:MODELS[cfg.model].fin,ex:MODELS[cfg.model].ex,noShock:false,
+    cg:0,ap:0,repairLeft:0,anc:M.target,ess:0,hhInc:100,hhShare:0.6,buf:3,margin:100,capLoss:0,debt:M.fx?75:60};
   SCEN[cfg.mode][cfg.scen].init(s,s.rng);
-  if(cfg.credit===false) s.F=Math.min(s.F,0.3);
+  if(!s.fin) s.F=Math.min(s.F,0.2);
+  s.anc=s.piE;
   s.ustar=s.ustarBase; s.rstar=s.rstarBase;
   s.P=100/Math.exp(s.y/100); s.Y=100; s.CPI=100; s.DEF=100;
   s.cpiA=[];s.yA=[];s.defA=[];s.pA=[];s.iA=[];s.ngA=[];
@@ -612,7 +747,8 @@ function ngdp(s,rule,gov){const M=s.M,g=M.target+M.gpot,m=s.m;
 function step(s,d){
   if(s.over) return;
   const M=s.M,r=s.rng,T=M.target,B=M.band;
-  const z=[];for(let k=0;k<6;k++)z.push(gauss(r));const uu=[r(),r(),r()];
+  const quiet=s.noShock; // previsão da equipe: sem novos choques
+  const z=[];for(let k=0;k<6;k++)z.push(quiet?0:gauss(r));const uu=quiet?[1,1,1]:[r(),r(),r()];
   const prevI=s.i, open=rateOpen(s);
   if(open) s.i=roundRate(s,d.i);
   s.qe=clamp(d.qe,-1,1); s.elf=!!d.elf; s.ccyb=!!d.ccyb;
@@ -622,8 +758,8 @@ function step(s,d){
     if(Math.abs(di)>1e-9) log(s,(M.copom?'Copom '+(di>0?'eleva':'reduz')+' a Selic em ':(di>0?'Juro básico sobe ':'Juro básico cai '))+fmt(Math.abs(di),2)+' p.p., para '+fmt(s.i,2)+'%.','dec');
     else if(M.copom) log(s,'Copom mantém a Selic em '+fmt(s.i,2)+'%.','dec');}
   guidanceCheck(s,prevI);
-  const sc=SCEN[s.cfg.mode][s.cfg.scen]; if(sc.ev) sc.ev(s,s.m);
-  if(s.cfg.supply&&uu[0]<0.014&&s.m>3) randomEvent(s,uu[1]);
+  const sc=SCEN[s.cfg.mode][s.cfg.scen]; if(sc.ev&&!quiet) sc.ev(s,s.m);
+  if(uu[0]<(s.cfg.supply?0.014:0.007)&&s.m>3) randomEvent(s,uu[1]);
 
   s.fiscal*=0.97; s.fiscalR*=0.99; s.fiscalRisk*=0.975; s.dem*=0.93; s.fxShock*=0.9; s.crisisSp*=0.93; s.crisisLoss*=0.97;
   if(s.crisisCool>0)s.crisisCool--; if(s.laborM>0)s.laborM--; if(s.gpotBoost>0)s.gpotBoost--;
@@ -642,7 +778,12 @@ function step(s,d){
   const cMkt=-0.5*(s.tp-M.tp0+1.6*s.qeS);
   const cCred=-0.8*(s.sp-1.6);
   const cFis=s.fiscal;
-  const cOth=1.4*s.ed+s.dem+(M.fx?0.02*s.depS:0);
+  // ciclo de crédito: efeito riqueza dos ativos; reparo de dívida: famílias poupam para quitar dívidas após a crise
+  let cCr=0;
+  if(s.cfg.credit&&s.fin){cCr+=0.02*clamp(s.ap,-30,30);if(s.repairLeft>0){cCr-=0.35*s.repairLeft/36;s.repairLeft--;}}
+  // choques de oferta por causa: orçamentos apertados amplificam o impacto de preços de alimentos e energia
+  if(s.cfg.supply)cCr-=0.25*Math.max(0,s.ess)*(s.hhShare-0.5);
+  const cOth=1.4*s.ed+s.dem+(M.fx?0.02*s.depS:0)+cCr;
   s.contrib={pol:cPol,mkt:cMkt,cred:cCred,fis:cFis,oth:cOth};
   s.y+=0.09*(cPol+cMkt+cCred+cFis+cOth-s.y);
 
@@ -671,6 +812,28 @@ function step(s,d){
   s.pm=s.core+s.impNow+M.printSd*z[4];
   s.CPI*=1+s.pm/1200; s.DEF*=1+(s.core+0.2*s.impNow+0.4*z[5])/1200;
 
+  // famílias e empresas
+  s.ess+=(s.impNow-s.ess)*0.2;
+  s.hhShare=clamp(0.6+0.03*s.ess+0.01*Math.max(0,s.u-s.ustar),0.5,0.85);
+  const rinc=gp+0.2*s.y-s.impNow;                       // renda real: salários seguem a inflação de base, preços a cheia
+  s.hhInc*=1+rinc/1200;
+  s.buf=clamp(s.buf+0.04*(3-s.buf)+0.06*(rinc-gp)-0.05*Math.max(0,s.u-s.ustar),0,6);
+  s.margin+=0.05*(100-s.margin)+0.3*s.y-0.5*s.es-0.2*Math.max(0,s.impNow);
+  s.capLoss=s.capLoss*0.97+(s.cfg.supply?0.05:0.02)*Math.max(0,s.impNow-1);
+  if(s.cfg.supply)s.P*=1-0.00015*s.capLoss;
+
+  // dívida pública (só para exibição do prêmio de risco)
+  s.debt+=s.debt*(s.i2-(s.core+gp))/1200+(0.2+0.05*s.fiscal-0.08*s.y)/12;
+  s.debt=clamp(s.debt,30,200);
+
+  // ciclo de crédito: lacuna de crédito e preços de ativos
+  if(s.cfg.credit&&s.fin){
+    s.cg+=0.08*(-s.rgap)+0.03*s.y-0.03*s.cg-(s.repairLeft>0?0.07*s.cg:0);
+    s.cg=clamp(s.cg,-10,18);
+    s.ap+=0.2*(2.2*s.cg-s.ap)-0.4*Math.max(0,s.i-prevI);
+    s.ap=clamp(s.ap,-40,45);
+  }
+
   // avança o relógio
   s.m++;
   s.cpiA.push(s.CPI);s.yA.push(s.Y);s.defA.push(s.DEF);s.pA.push(s.P);s.iA.push(s.i);s.ngA.push(s.Y*s.DEF/100);
@@ -684,16 +847,25 @@ function step(s,d){
   if(s.piYoY<T-B&&s.i-s.piE-s.rstar<-0.5)dC+=0.003;
   if(s.guid&&s.guid.type==='up')dC+=0.003;
   s.C=clamp(s.C+dC,0.05,0.97);
-  s.piE+=(1-s.C)*0.07*(0.5*s.pi3+0.5*s.piYoY-s.piE)+s.C*0.025*(T-s.piE)-0.008*clamp(s.rgap,-3,4);
+  const obs=0.5*s.pi3+0.5*s.piYoY;
+  if(s.ex==='l'){ // aprendizado: sem puxão para a meta; o ganho sobe quando o erro de previsão é grande
+    const gain=0.025+0.05*(1-s.C)+0.012*Math.min(3,Math.abs(obs-s.piE));
+    s.piE+=gain*(obs-s.piE)-0.008*clamp(s.rgap,-3,4);
+  }else if(s.ex==='a'){ // âncora: só se solta com erros persistentes fora da banda; credibilidade vem da distância à meta
+    if(g>B)s.anc+=0.012*(obs-s.anc);else s.anc+=0.02*(T-s.anc);
+    s.piE+=0.2*(s.anc+0.25*(obs-s.anc)-s.piE)-0.008*clamp(s.rgap,-3,4);
+    s.C=clamp(1-Math.abs(s.anc-T)/3,0.05,0.97);
+  }else
+  s.piE+=(1-s.C)*0.07*(obs-s.piE)+s.C*0.025*(T-s.piE)-0.008*clamp(s.rgap,-3,4);
   if(s.cfg.model!=='L'&&s.i<=M.iMin+0.1&&s.y<-2)s.piE-=0.01*(-s.y-2);
 
   // fragilidade financeira
-  if(s.cfg.credit)s.F+=0.010*Math.max(0,-s.rgap)+0.006*Math.max(0,s.y)+0.004*Math.max(0,s.qeS);
+  if(s.fin)s.F+=0.010*Math.max(0,-s.rgap)+0.006*Math.max(0,s.y)+0.004*Math.max(0,s.qeS)+(s.cfg.credit?0.004*Math.max(0,s.cg-2):0);
   const hike=s.i-s.iA[OFF+s.m-3];
   s.F+=0.05*clamp(hike-M.govStep,0,4);
   s.F+=0.035*(0.2-s.F); s.F-=0.004*s.ccybB; s.F=Math.max(0,s.F);
   fin(s);
-  if(s.cfg.model!=='L'&&s.cfg.credit&&s.F>0.75&&s.crisisCool===0&&uu[2]<(s.F-0.75)*0.15)
+  if(s.fin&&s.crisisCool===0&&uu[2]<(s.F>0.75?(s.F-0.75)*0.15:0)+(s.cfg.credit?0.004*Math.max(0,s.cg-3):0))
     crisis(s,3.2,-3.5,'Crise financeira: inadimplência dispara e um banco médio quebra.');
 
   // pontuação
@@ -724,11 +896,13 @@ function step(s,d){
 function score(s){return s.scoreN?s.scoreSum/s.scoreN:0;}
 
 /* ---------- Códigos, registro e replay ---------- */
-function encode(cfg){return cfg.mode+'-'+cfg.scen+'-'+cfg.model+(cfg.credit?'C':'')+(cfg.supply?'S':'')+'-'+(cfg.seed>>>0).toString(36).toUpperCase();}
+function encode(cfg){return cfg.mode+'-'+cfg.scen+'-'+cfg.model+(cfg.credit?'C':'')+(cfg.repair?'B':'')+(cfg.supply?'S':'')+'-'+(cfg.seed>>>0).toString(36).toUpperCase();}
 function decode(code){const p=String(code).trim().split('-');if(p.length!==4)return null;
   const mode=p[0].toUpperCase();if(!MODES[mode])return null;const scen=p[1];if(!SCEN[mode][scen])return null;
   const f=p[2].toUpperCase();const seed=parseInt(p[3],36);if(!isFinite(seed))return null;
-  return {mode,scen,model:f[0]==='L'?'L':'R',credit:f.indexOf('C')>0,supply:f.indexOf('S')>0,seed:seed>>>0,endless:false};}
+  const model=MODELS[f[0]]?f[0]:'R',fin=MODELS[model].fin;
+  const credit=!!fin&&f.indexOf('C')>0;
+  return {mode,scen,model,credit,repair:credit&&f.indexOf('B')>0,supply:!!fin&&f.indexOf('S')>0,seed:seed>>>0,endless:false};}
 function packDec(d){return [d.i,Math.round(d.qe*100),d.elf?1:0,d.ccyb?1:0,d.g||0,(d.gov&&d.gov.length)?d.gov.join('+'):0];}
 function unpackDec(a){return {i:a[0],qe:a[1]/100,elf:!!a[2],ccyb:!!a[3],g:a[4]||null,gov:a[5]?String(a[5]).split('+'):[]};}
 
@@ -744,10 +918,23 @@ function simulate(cfg,decs,policy,upto,ngRule){
     step(s,d);
   }
   const h=s.H.slice(1);const avg=k=>h.reduce((a,b)=>a+b[k],0)/Math.max(1,h.length);
-  return {score:score(s),pi:avg('piYoY'),u:avg('u'),lost:s.lost};
+  return {score:score(s),pi:avg('piYoY'),u:avg('u'),lost:s.lost,H:s.H};
 }
 
-return {OFF,VERSION,MESES,MODES,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,fmt};
+/* Previsão da equipe: 24 meses sem novos choques, com os ajustes atuais mantidos ou com a regra de Taylor. */
+function forecast(s,policy,n,iNow){
+  const rng=s.rng,lg=s.logs,H=s.H,dec=s.dec;s.rng=null;s.logs=[];s.H=[];s.dec=[];
+  let c;try{c=structuredClone(s);}finally{s.rng=rng;s.logs=lg;s.H=H;s.dec=dec;}
+  c.rng=()=>0.5;c.noShock=true;c.over=null;c.cfg.endless=true;
+  const pi=[c.piYoY],u=[c.u];
+  for(let k=0;k<n;k++){
+    const d={i:policy==='taylor'?taylor(c,true):(k===0&&iNow!=null?iNow:c.i),qe:c.qe,elf:c.elf,ccyb:c.ccyb,gov:[],g:null};
+    step(c,d);pi.push(c.piYoY);u.push(c.u);
+  }
+  return {pi,u};
+}
+
+return {OFF,VERSION,MESES,MODES,MODELS,OPTS,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,forecast,fmt};
 })();
 </script>
 
@@ -759,20 +946,22 @@ const S=SIM,$=id=>document.getElementById(id);
 const fmt=S.fmt;
 const pct=(x,d=1)=>isFinite(x)?fmt(x,d)+'%':'—';
 const sg=(x,d=1)=>isFinite(x)?(x>0?'+':x<0?'−':'')+fmt(Math.abs(x),d):'—';
-let st=null, cfg=null, pend={g:null,gov:[]}, timer=null;
+let st=null, cfg=null, pend={g:null,gov:[]}, timer=null, fc=null, cfH=null;
 const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}};
 
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 function randSeed(){return (Math.random()*2**31)>>>0;}
 
 function start(c,replayDecs){
-  stopAuto(); cfg=c; st=S.newState(cfg); pend={g:null,gov:[]};
+  stopAuto(); cfg=c; st=S.newState(cfg); pend={g:null,gov:[]}; cfH=null; $('cfBar').hidden=true;
   if(replayDecs){for(const a of replayDecs){if(st.over)break;const d=S.unpackDec(a);st.dec.push(a);S.step(st,d);}
     const last=replayDecs[replayDecs.length-1]; if(last){const d=S.unpackDec(last);$('qe').value=Math.round(d.qe*100);$('fElf').checked=d.elf;$('fCcyb').checked=d.ccyb;}}
   else{$('qe').value=0;$('fElf').checked=false;$('fCcyb').checked=false;}
   setupMode(); $('rate').value=st.i; render();
 }
-function newCfg(mode,scen){return {mode,scen,model:$('modelSel').value,credit:$('oCredit').checked,supply:$('oSupply').checked,seed:randSeed(),endless:$('oEndless').checked};}
+function optFlags(){const model=$('modelSel').value||'R',fin=S.MODELS[model].fin,o=fin?$('optSel').value:'';
+  return {model,credit:o.includes('c'),repair:o.includes('b'),supply:o.includes('s')};}
+function newCfg(mode,scen){return Object.assign({mode,scen,seed:randSeed(),endless:$('oEndless').checked},optFlags());}
 
 function setupMode(){
   const M=st.M,BR=M.fx;
@@ -798,7 +987,11 @@ function setupMode(){
   $('govMax').textContent=fmt(M.govStep,2);$('govCap').textContent=M.realCap;
   $('fgSel').options[0].textContent='Manter os juros altos até a inflação cair abaixo de '+fmt(M.target+1,0)+'%';
   const ss=$('scenSel');ss.innerHTML='';for(const k in S.SCEN[M.id]){const o=document.createElement('option');o.value=k;o.textContent=S.SCEN[M.id][k].name;ss.appendChild(o);}ss.value=cfg.scen;
-  $('modelSel').value=cfg.model;$('oCredit').checked=cfg.credit;$('oSupply').checked=cfg.supply;$('oEndless').checked=!!cfg.endless;
+  const ms=$('modelSel');if(!ms.options.length){for(const k in S.MODELS){const o=document.createElement('option');o.value=k;o.textContent=S.MODELS[k].n;ms.appendChild(o);}
+    const os=$('optSel');for(const k in S.OPTS){const o=document.createElement('option');o.value=k;o.textContent=S.OPTS[k];os.appendChild(o);}}
+  ms.value=cfg.model;$('optSel').value=(cfg.credit?(cfg.repair?'cb':'c'):'')+(cfg.supply?'s':'');
+  $('optSel').disabled=!S.MODELS[cfg.model].fin;$('optSel').title=$('optSel').disabled?'As opções precisam de um modelo com setor financeiro':'';
+  $('oEndless').checked=!!cfg.endless;
   $('scenLabel').textContent=S.SCEN[M.id][cfg.scen].name;
   const gb=$('govBox');gb.innerHTML='';
   for(const k of S.GOV_BY[M.id]){const g=S.GOV[k];const b=document.createElement('button');b.type='button';b.dataset.k=k;
@@ -823,7 +1016,7 @@ function advance(){
   if(!st||st.over){stopAuto();return;}
   const d=currentDecision();st.dec.push(S.packDec(d));S.step(st,d);pend={g:null,gov:[]};
   $('rate').value=st.i;render();
-  if(st.over)stopAuto();
+  if(st.over){stopAuto();window.dispatchEvent(new Event('bcsim-over'));}
 }
 function startAuto(){if(timer||!st||st.over)return;timer=setInterval(advance,$('oFast').checked?220:600);$('btnAuto').textContent='❚❚ Pausar';$('btnAuto').classList.add('on');}
 function stopAuto(){if(timer){clearInterval(timer);timer=null;}$('btnAuto').textContent='▶ Rodar automático';$('btnAuto').classList.remove('on');}
@@ -888,8 +1081,21 @@ function render(){
   const c=s.contrib,rows=[['Política',c.pol],['Mercados',c.mkt],['Crédito',c.cred],['Governo',c.fis],['Outros',c.oth]];
   $('decomp').innerHTML=rows.map(([n,v])=>{const w=Math.min(50,Math.abs(v)/4*50);const l=v>=0?50:50-w;
     return '<div><span>'+n+'</span><span class="track"><i style="left:'+l+'%;width:'+w+'%;background:'+(v>=0?'var(--s-r)':'var(--s-inf)')+'"></i></span><span class="mono" style="text-align:right">'+sg(v,1)+'</span></div>';}).join('');
+  const h36=s.m>=36?s.H[s.m-36]:null;
+  $('p36').textContent=h36?pct((Math.pow(s.CPI/h36.CPI,1/3)-1)*100):'—';
+  $('y36').textContent=h36?pct((Math.pow(s.Y/h36.Y,1/3)-1)*100):'—';
+  $('kMort').textContent=pct(s.mort,2);$('kVac').textContent=fmt(s.vac,2);$('kIRP').textContent=pct(s.irp,2);
+  $('kRisk').textContent=s.fin?fmt(s.crisk,0)+'%':'—';$('kRisk').className=s.crisk>25?'bad':s.crisk>8?'warn':'';
+  $('kDebt').textContent=fmt(s.debt,0)+'%';$('kPrem').textContent=pct(s.prem,2);
+  $('kCG').textContent=s.cfg.credit?sg(s.cg,1):'—';$('kAP').textContent=s.cfg.credit?sg(s.ap,0)+'%':'—';
+  $('kHint').textContent=!s.fin?'Este modelo não tem setor financeiro: sem fragilidade, crises ou ciclo de crédito.':!s.cfg.credit?'Ligue "ciclo de crédito" nas opções da partida para acompanhar a lacuna de crédito e os preços de ativos.':s.repairLeft>0?'Reparo de dívida em curso: as famílias poupam para quitar dívidas e seguram a demanda por '+s.repairLeft+' meses.':'';
+  $('hInc').textContent=fmt(s.hhInc,1);$('hBuf').textContent=fmt(s.buf,1);$('hShare').textContent=fmt(s.hhShare*100,0)+'%';
+  $('hMar').textContent=fmt(s.margin,1);$('hCap').textContent=fmt(s.capLoss,1)+'%';$('hEss').textContent=sg(s.ess,1)+' p.p.';
   $('fPot').textContent=pct(s.gpot-(s.laborM>0?0.6:0));$('fUs').textContent=pct(s.ustar);$('fNeu').textContent=pct(s.rstar+s.piE,2);$('fCarta').textContent=s.cartas;
   $('gameCode').textContent=S.encode(cfg);
+  fc=s.over?null:{hold:S.forecast(s,'hold',24,open&&!auto?parseFloat($('rate').value):null),tay:S.forecast(s,'taylor',24)};
+  if(fc){$('vFcPi').textContent='em 24m: '+pct(fc.hold.pi[24])+' · Taylor '+pct(fc.tay.pi[24]);$('vFcU').textContent='em 24m: '+pct(fc.hold.u[24])+' · Taylor '+pct(fc.tay.u[24]);}
+  $('lgFcBand').textContent='Meta '+fmt(T,1)+'% ± '+fmt(B,1);
   renderGov();renderLog();drawAll();
 }
 function renderLog(){
@@ -918,8 +1124,8 @@ function chart(id,o){
   c.strokeStyle=col('--rule');c.lineWidth=1;c.fillStyle=col('--muted');c.textAlign='right';
   for(let v=lo;v<=hi+1e-9;v+=stp){const y=Math.round(Y(v))+.5;c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();
     c.fillText((Math.abs(stp)<1?fmt(v,1):fmt(v,0)),L-5,y);}
-  c.textAlign='center';c.textBaseline='top';const ys=xmax>150?24:12;
-  for(let m=0;m<=xmax;m+=ys){const x=X(m);c.fillText('A'+(m/12+1),Math.min(Math.max(x,L+8),W-R-8),Hh-B+5);}
+  c.textAlign='center';c.textBaseline='top';const ys=o.fc?6:xmax>150?24:12;
+  for(let m=0;m<=xmax;m+=ys){const x=X(m);c.fillText(o.fc?'+'+m+'m':'A'+(m/12+1),Math.min(Math.max(x,L+10),W-R-10),Hh-B+5);}
   if(o.band){c.fillStyle=col('--band');c.fillRect(L,Y(o.band[1]),pw,Y(o.band[0])-Y(o.band[1]));}
   if(o.zero&&lo<0&&hi>0){c.strokeStyle=col('--muted');c.setLineDash([]);c.beginPath();c.moveTo(L,Y(0));c.lineTo(W-R,Y(0));c.stroke();}
   (o.hl||[]).forEach(h=>{c.strokeStyle=col(h.c);c.setLineDash([3,3]);c.beginPath();c.moveTo(L,Y(h.v));c.lineTo(W-R,Y(h.v));c.stroke();c.setLineDash([]);});
@@ -935,8 +1141,13 @@ function drawAll(){
   if(!st)return;CSS=getComputedStyle(document.documentElement);
   const H=st.H,M=st.M,T=M.target,xmax=Math.max(st.cfg.endless?Math.max(120,st.m+12):M.term,st.m);
   const g=k=>H.map(h=>h[k]);
-  chart('cInf',{xmax,band:[T-M.band,T+M.band],hl:[{v:T,c:'--gold'}],minSpan:4,series:[{v:g('pm'),c:'--s-inf',dots:1},{v:g('piE'),c:'--s-exp',dash:1},{v:g('pi3'),c:'--s-inf',w:2.2,end:1}]});
-  chart('cU',{xmax,minSpan:3,series:[{v:g('ustar'),c:'--s-ref',dash:1},{v:g('u'),c:'--s-u',w:2.2,end:1}]});
+  const cfx=cfH?[cfH.map(h=>h.pi3)]:[],cfu=cfH?[cfH.map(h=>h.u)]:[];
+  chart('cInf',{xmax,band:[T-M.band,T+M.band],hl:[{v:T,c:'--gold'}],minSpan:4,series:[{v:g('pm'),c:'--s-inf',dots:1},{v:g('piE'),c:'--s-exp',dash:1}].concat(cfx.map(v=>({v,c:'--s-4',dash:1,w:2})),[{v:g('pi3'),c:'--s-inf',w:2.2,end:1}])});
+  chart('cU',{xmax,minSpan:3,series:[{v:g('ustar'),c:'--s-ref',dash:1}].concat(cfu.map(v=>({v,c:'--s-4',dash:1,w:2})),[{v:g('u'),c:'--s-u',w:2.2,end:1}])});
+  if(fc){
+    chart('cFcPi',{xmax:24,fc:1,band:[T-M.band,T+M.band],hl:[{v:T,c:'--gold'}],minSpan:4,series:[{v:fc.tay.pi,c:'--s-inf',dash:1},{v:fc.hold.pi,c:'--s-inf',w:2.2,end:1}]});
+    chart('cFcU',{xmax:24,fc:1,minSpan:3,hl:[{v:st.ustar,c:'--s-ref'}],series:[{v:fc.tay.u,c:'--s-u',dash:1},{v:fc.hold.u,c:'--s-u',w:2.2,end:1}]});
+  }
   chart('cR',{xmax,zero:1,minSpan:4,series:[{v:g('neu'),c:'--s-ref',dash:1},{v:g('rr'),c:'--s-u'},{v:g('i'),c:'--s-r',w:2.2,end:1}]});
   chart('cG',{xmax,zero:1,minSpan:4,series:[{v:g('gp'),c:'--s-ref',dash:1},{v:H.map(h=>h.m>=1?h.gy:NaN),c:'--s-r',w:2.2,end:1}]});
   chart('cCPI',{xmax,minSpan:4,series:[{v:g('cpiPath'),c:'--s-exp',dash:1},{v:g('CPI'),c:'--s-inf',w:2.2,end:1}]});
@@ -968,7 +1179,8 @@ function compare(){
     ['Regra de Taylor',S.simulate(cfg,st.dec,'taylor',upto)],
     ['Meta de PIB nominal',S.simulate(cfg,st.dec,'ngdp',upto,rule)],
     ['Juros parados',S.simulate(cfg,st.dec,'hold',upto)]];
-  $('cmpTbl').tBodies[0].innerHTML=rows.map(([n,r,c])=>'<tr class="'+(c||'')+'"><td>'+n+'</td>'+(r?'<td>'+fmt(r.score,0)+'</td><td>'+pct(r.pi)+'</td><td>'+pct(r.u)+'</td><td>'+fmt(r.lost,1)+'%</td>':'<td colspan="4" style="text-align:right;color:var(--muted)">jogue ao menos 12 meses</td>')+'</tr>').join('')
+  cmpH=rows.map(r=>r[1]&&r[1].H);
+  $('cmpTbl').tBodies[0].innerHTML=rows.map(([n,r,c],k)=>'<tr class="'+(c||'')+'"><td>'+n+(r?' <button class="btn" data-cf="'+k+'" style="padding:2px 8px;font-size:.72rem">ver no painel</button>':'')+'</td>'+(r?'<td>'+fmt(r.score,0)+'</td><td>'+pct(r.pi)+'</td><td>'+pct(r.u)+'</td><td>'+fmt(r.lost,1)+'%</td>':'<td colspan="4" style="text-align:right;color:var(--muted)">jogue ao menos 12 meses</td>')+'</tr>').join('')
     +'<tr><td colspan="5" style="text-align:left;color:var(--muted);font-size:.74rem">Comparação até o mês '+upto+'. PIB perdido = soma dos hiatos negativos, em % de um ano de PIB.</td></tr>';
 }
 
@@ -994,8 +1206,8 @@ $('btnEndless').addEventListener('click',()=>{cfg.endless=true;st.cfg.endless=tr
 ['apTaylor','apNGDP'].forEach(id=>$(id).addEventListener('change',e=>{if(e.target.checked){(id==='apTaylor'?$('apNGDP'):$('apTaylor')).checked=false;}render();}));
 $('fgAnn').addEventListener('click',()=>{pend.g=$('fgSel').value;render();toast('Anúncio entra com a próxima decisão.');});
 $('fgWd').addEventListener('click',()=>{if(!st.guid){toast('Não há compromisso em vigor.');return;}pend.g='withdraw';render();});
-function cfgChange(){start({mode:cfg.mode,scen:$('scenSel').value,model:$('modelSel').value,credit:$('oCredit').checked,supply:$('oSupply').checked,seed:cfg.seed,endless:$('oEndless').checked});}
-['scenSel','modelSel','oCredit','oSupply'].forEach(id=>$(id).addEventListener('change',cfgChange));
+function cfgChange(){start(Object.assign({mode:cfg.mode,scen:$('scenSel').value,seed:cfg.seed,endless:$('oEndless').checked},optFlags()));}
+['scenSel','modelSel','optSel'].forEach(id=>$(id).addEventListener('change',cfgChange));
 $('oEndless').addEventListener('change',()=>{cfg.endless=$('oEndless').checked;st.cfg.endless=cfg.endless;if(cfg.endless)st.over=null;render();});
 $('btnCopyCode').addEventListener('click',()=>copy(S.encode(cfg),'Código copiado.'));
 $('btnExport').addEventListener('click',()=>{const txt=JSON.stringify({v:S.VERSION,code:S.encode(cfg),dec:st.dec});$('loadBox').value=txt;copy(txt,'Registro copiado ('+st.dec.length+' decisões).');});
@@ -1004,6 +1216,10 @@ $('btnLoad').addEventListener('click',()=>{const t=$('loadBox').value.trim();if(
     else{const c=S.decode(t);if(!c)throw 0;start(c);toast('Economia carregada.');}}
   catch(e){toast('Não reconheci esse código. Formato: BR-h25-RCS-K3J9X.');}});
 $('btnCompare').addEventListener('click',compare);
+let cmpH=[];const CFN=['Você','Regra de Taylor','Meta de PIB nominal','Juros parados'];
+$('cmpTbl').addEventListener('click',e=>{const b=e.target.closest('[data-cf]');if(!b)return;const k=+b.dataset.cf;cfH=cmpH[k]||null;
+  $('cfBar').hidden=!cfH;$('cfName').textContent='Repetição contrafactual · '+CFN[k];drawAll();document.getElementById('painel').scrollIntoView({behavior:'smooth'});});
+$('cfClose').addEventListener('click',()=>{cfH=null;$('cfBar').hidden=true;drawAll();});
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;
   if(e.key==='n'||e.key==='N'){advance();}});
 
@@ -1014,8 +1230,11 @@ new MutationObserver(redraw).observe(document.documentElement,{attributes:true,a
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
 
 const m0=pref('bcsim-mode')==='CL'?'CL':'BR';
-start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:true,supply:true,seed:randSeed(),endless:false});
+window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg)};
+start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:false,repair:false,supply:false,seed:randSeed(),endless:false});
 })();
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="platform.js"></script>
 </body></html>
