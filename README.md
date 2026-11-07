@@ -62,3 +62,12 @@ O jogo tambem roda como app do Windows, offline, com janela e menu nativos (Jogo
 - Teste de fumaca: `SMOKE_OUT=smoke npx electron app/smoke.js`.
 
 O idioma padrao e portugues do Brasil; o menu Idioma troca para ingles.
+
+## Modo Pesquisa (DSGE)
+
+Painel "Pesquisa" (site e app): resolve modelos DSGE lineares com expectativas racionais, mostra funcoes de impulso-resposta e momentos teoricos e compara regimes de politica (Gali-Monacelli 2005: otima, Taylor sobre inflacao domestica, Taylor sobre IPC e cambio fixo). O modelo pode ser editado em texto; formato no proprio painel.
+
+- Codigo: `dsge.js` (solver), `dsge-models.js` (modelos), `research.js` (painel).
+- Testes: `node test/dsge.test.js` (15 testes por propriedades analiticas).
+- Referencia do FRB/US (Federal Reserve, dominio publico): `docs/ref/frbus-choque-100pb.json`, gerada por `tools/pyfrbus_reference.py`.
+- Estudo das referencias abertas e plano: `docs/estudo-referencias.md`.

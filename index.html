@@ -223,6 +223,10 @@ dialog{border:0;border-radius:18px;padding:0;max-width:min(480px,calc(100vw - 32
 dialog::backdrop{background:rgba(10,18,14,.55);backdrop-filter:blur(3px)}
 .tut-body{padding:22px 22px 6px}.tut-body h2{margin:6px 0 8px;font-size:1.3rem}.tut-body p{margin:0;color:var(--muted);line-height:1.55}
 .tut-actions{padding:16px 22px 22px;justify-content:flex-end}.tut-actions .btn{flex:none}
+.dsge-params{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-top:8px}
+.dsge-par{display:flex;flex-direction:column;gap:2px;font-size:.72rem;color:var(--muted)}
+.dsge-par input{padding:6px 8px;font-family:var(--f-data);font-size:.82rem;width:100%}
+#dsgeText{font-family:var(--f-data);width:100%;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);padding:10px;resize:vertical}
 .mbar{display:none}
 @media (max-width:980px){
   .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;gap:14px;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right));background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--rule);box-shadow:0 -8px 24px -16px rgba(0,0,0,.35)}
@@ -278,7 +282,7 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
 </section>
 
 <nav class="tabs" aria-label="Seções"><div class="wrap">
-  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#historico">Conquistas</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
+  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#pesquisa">Pesquisa</a><a href="#historico">Conquistas</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
 </div></nav>
 
 <div class="wrap" id="saveWrap" hidden>
@@ -558,6 +562,30 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
         <div class="tbl-wrap"><table id="cmpTbl"><thead><tr><th>Estratégia</th><th>Pontos</th><th>Inflação média</th><th>Desemprego médio</th><th>Perda de PIB</th></tr></thead><tbody><tr><td colspan="5" style="text-align:left;color:var(--muted)">Clique em “Comparar agora”.</td></tr></tbody></table></div>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="band-sec" id="pesquisa">
+  <div class="wrap">
+    <div class="sec-head"><h2>Modo Pesquisa · DSGE</h2><span class="label">expectativas racionais · solução por doubling</span></div>
+    <p class="intro">Resolva modelos DSGE lineares, veja as funções de impulso-resposta e compare regimes de política. Escolha um modelo pronto ou escreva o seu no formato abaixo (variáveis em desvios do estado estacionário; <code>x(+1)</code> é a expectativa, <code>x(-1)</code> o valor defasado).</p>
+    <div class="row" style="align-items:center;margin-bottom:10px">
+      <select id="dsgeModel" aria-label="Modelo" style="flex:2"></select>
+      <select id="dsgeShock" aria-label="Choque" style="flex:1"></select>
+      <select id="dsgeSize" aria-label="Tamanho do choque" style="flex:1"><option value="sd">Choque de 1 desvio-padrão</option><option value="one">Choque de 1 unidade</option></select>
+      <button class="btn primary" id="dsgeRun" style="flex:none">Resolver texto</button>
+    </div>
+    <label class="check" style="margin-bottom:8px"><input type="checkbox" id="dsgeCmp"><span><b>Comparar os 4 regimes de política</b> (disponível nos modelos de economia aberta)</span></label>
+    <div id="dsgeMsg" class="hint">—</div>
+    <div class="share" style="margin-top:12px">
+      <div class="card"><h3><span>Modelo (texto)</span></h3><textarea id="dsgeText" spellcheck="false" style="min-height:300px;font-size:.76rem;margin-top:8px"></textarea></div>
+      <div class="card"><h3><span>Parâmetros</span></h3><div id="dsgeParams" class="dsge-params"></div>
+        <h3 style="margin-top:14px"><span>Momentos teóricos</span><span class="label">choques independentes</span></h3>
+        <div class="tbl-wrap"><table><thead><tr><th>Variável</th><th>Desvio-padrão</th><th>Autocorr. (1)</th></tr></thead><tbody id="dsgeMom"></tbody></table></div>
+      </div>
+    </div>
+    <h3 style="margin:16px 0 8px"><span>Funções de impulso-resposta</span> <span class="label" id="dsgeUnit">24 trimestres</span></h3>
+    <div class="grid2" id="dsgeCharts"></div>
   </div>
 </section>
 
@@ -1413,7 +1441,7 @@ $('mbStep').addEventListener('click',advance);
 /* ---------- modo app (Electron): menu nativo + um painel por vez ---------- */
 const APP=!!window.appBridge||/[?&]app=1\b/.test(location.search);
 const BR_=window.appBridge||{menu(){},onCommand(){}};
-const VIEWS=['painel','previsao','monitores','mercados','governo','compartilhar','historico','ranking','diario'];
+const VIEWS=['painel','previsao','monitores','mercados','governo','compartilhar','pesquisa','historico','ranking','diario'];
 let appView='painel';
 const viewEl=id=>{const e=$(id);return e?(e.tagName==='SECTION'?e:e.closest('section')):null;};
 function sendMenu(){if(!APP||!st)return;const M=st.M,en=document.documentElement.lang==='en';
@@ -1422,7 +1450,7 @@ function sendMenu(){if(!APP||!st)return;const M=st.M,en=document.documentElement
 function showView(id){if(!APP||VIEWS.indexOf(id)<0)return;appView=id;
   VIEWS.forEach(v=>{const e=viewEl(v);if(e)e.hidden=v!==id;});
   document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+id));
-  window.scrollTo(0,0);drawAll();drawHist(jget('bcsim-hist',[]));sendMenu();}
+  window.scrollTo(0,0);drawAll();drawHist(jget('bcsim-hist',[]));if(id==='pesquisa'&&window.BCRESEARCH)BCRESEARCH.redraw();sendMenu();}
 function appInit(){
   document.documentElement.classList.add('app');
   const col=document.querySelector('main.layout > div');
@@ -1452,5 +1480,8 @@ if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="platform.js"></script>
+<script src="dsge.js"></script>
+<script src="dsge-models.js"></script>
+<script src="research.js"></script>
 <script src="lang.js"></script>
 </body></html>
