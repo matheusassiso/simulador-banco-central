@@ -282,7 +282,7 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
 </section>
 
 <nav class="tabs" aria-label="Seções"><div class="wrap">
-  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#pesquisa">Pesquisa</a><a href="#historico">Conquistas</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
+  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#caos">Caos</a><a href="#pesquisa">Pesquisa</a><a href="#historico">Conquistas</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
 </div></nav>
 
 <div class="wrap" id="saveWrap" hidden>
@@ -562,6 +562,62 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
         <div class="tbl-wrap"><table id="cmpTbl"><thead><tr><th>Estratégia</th><th>Pontos</th><th>Inflação média</th><th>Desemprego médio</th><th>Perda de PIB</th></tr></thead><tbody><tr><td colspan="5" style="text-align:left;color:var(--muted)">Clique em “Comparar agora”.</td></tr></tbody></table></div>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="band-sec" id="caos">
+  <div class="wrap">
+    <div class="sec-head"><h2>Laboratório do Caos</h2><span class="label">sem tetos · modelo de Cagan</span></div>
+    <p class="intro">Aqui vale tudo: juros de 120% ou de 100000% ao mês, imprimir dinheiro sem parar, congelar preços (Plano Cruzado), bloquear ativos (Plano Collor), cortar zeros e criar moeda nova, passar pela URV até a âncora cambial (Plano Real) e ver a senhoriagem esgotar. Modelo didático, não prevê nenhum país.</p>
+    <div class="row" style="align-items:center;margin-bottom:10px">
+      <select id="cxPreset" aria-label="Ponto de partida" style="flex:3"></select>
+      <button class="btn" id="cxNew" style="flex:none">Reiniciar</button>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3><span>Política mensal</span><span class="label">aceita qualquer número</span></h3>
+        <div class="dsge-params" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <label class="dsge-par"><span>Juros (% ao mês)</span><input id="cxI" type="number" step="any" value="16"></label>
+          <label class="dsge-par"><span>Déficit primário (% do PIB por mês)</span><input id="cxD" type="number" step="any" value="3"></label>
+          <label class="dsge-par"><span>Emissão de moeda (% ao mês)</span><input id="cxMu" type="number" step="any" value="15"></label>
+          <label class="dsge-par"><span>Como emitir</span><select id="cxMode"><option value="emissao">Emissão manual</option><option value="deficit">Monetizar o déficit e os juros</option></select></label>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn primary" id="cxStep">Avançar 1 mês ▸</button><button class="btn" id="cxStep12">Avançar 12 meses ▸▸</button><button class="btn" id="cxAuto">▶ Automático</button></div>
+      </div>
+      <div class="card">
+        <h3><span>Planos e bizarrices</span><span class="label">valem no próximo mês</span></h3>
+        <div class="dsge-params" style="grid-template-columns:repeat(3,minmax(0,1fr));align-items:end">
+          <label class="dsge-par"><span>Congelar: meses</span><input id="cxFzM" type="number" value="12"></label>
+          <label class="dsge-par"><span>rigor (%)</span><input id="cxFzR" type="number" value="95"></label>
+          <div class="row"><button class="btn" id="cxFreeze">Congelar</button><button class="btn" id="cxUnfreeze">Soltar</button></div>
+          <label class="dsge-par"><span>Cortar zeros</span><input id="cxZk" type="number" value="3"></label>
+          <label class="dsge-par"><span>nome da moeda</span><input id="cxZn" type="text" value="Cruzado"></label>
+          <button class="btn" id="cxCut">Nova moeda</button>
+          <label class="dsge-par"><span>Bloquear ativos (%)</span><input id="cxBl" type="number" value="80"></label>
+          <button class="btn" id="cxConf">Confiscar</button>
+          <span></span>
+          <label class="dsge-par"><span>Helicóptero (% da base)</span><input id="cxHe" type="number" value="50"></label>
+          <button class="btn" id="cxHeli">Jogar dinheiro</button>
+          <span></span>
+          <label class="dsge-par"><span>URV: meses até a conversão</span><input id="cxUm" type="number" value="4"></label>
+          <button class="btn" id="cxUrv">Iniciar URV</button>
+          <span></span>
+          <label class="dsge-par"><span>Âncora: desvalorização (% ao mês)</span><input id="cxPc" type="number" step="any" value="0.3"></label>
+          <div class="row"><button class="btn" id="cxPeg">Fixar câmbio</button><button class="btn" id="cxUnpeg">Soltar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="status" style="border:0;margin-top:12px"><div class="wrap" id="cxStats" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div></div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="card"><h3><span>Nível de preços</span><span class="label">log10, em unidades da moeda original</span></h3><canvas id="cxC1" style="height:170px"></canvas></div>
+      <div class="card"><h3><span>Inflação ao mês</span><span class="label">escala log10 (1 + %)</span></h3><canvas id="cxC2" style="height:170px"></canvas></div>
+      <div class="card"><h3><span>Saldo real de moeda</span><span class="label">meses de PIB, escala log10</span></h3><canvas id="cxC3" style="height:170px"></canvas></div>
+      <div class="card"><h3><span>Senhoriagem e produto</span><span class="label">verde: arrecadação real · azul: produto</span></h3><canvas id="cxC4" style="height:170px"></canvas></div>
+      <div class="card"><h3><span>Curva de Laffer da senhoriagem</span><span class="label" id="cxLafLbl">—</span></h3><canvas id="cxC5" style="height:170px"></canvas></div>
+      <div class="card"><h3><span>Segundas diferenças</span><span class="label" id="cxS2Lbl">S″ contra ℓ″</span></h3><canvas id="cxC6" style="height:170px"></canvas><div class="legend"><span style="color:var(--s-r)"><i></i>senhoriagem S″ (× 100)</span><span style="color:var(--s-inf)"><i></i>inflação ℓ″</span></div></div>
+    </div>
+    <h3 style="margin:16px 0 8px"><span>Diário do caos</span></h3>
+    <ul class="log" id="cxLog"></ul>
   </div>
 </section>
 
@@ -1485,7 +1541,7 @@ $('mbStep').addEventListener('click',advance);
 /* ---------- modo app (Electron): menu nativo + um painel por vez ---------- */
 const APP=!!window.appBridge||/[?&]app=1\b/.test(location.search);
 const BR_=window.appBridge||{menu(){},onCommand(){}};
-const VIEWS=['painel','previsao','monitores','mercados','governo','compartilhar','pesquisa','historico','ranking','diario'];
+const VIEWS=['painel','previsao','monitores','mercados','governo','compartilhar','caos','pesquisa','historico','ranking','diario'];
 let appView='painel';
 const viewEl=id=>{const e=$(id);return e?(e.tagName==='SECTION'?e:e.closest('section')):null;};
 function sendMenu(){if(!APP||!st)return;const M=st.M,en=document.documentElement.lang==='en';
@@ -1494,7 +1550,7 @@ function sendMenu(){if(!APP||!st)return;const M=st.M,en=document.documentElement
 function showView(id){if(!APP||VIEWS.indexOf(id)<0)return;appView=id;
   VIEWS.forEach(v=>{const e=viewEl(v);if(e)e.hidden=v!==id;});
   document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+id));
-  window.scrollTo(0,0);drawAll();drawHist(jget('bcsim-hist',[]));if(id==='pesquisa'&&window.BCRESEARCH)BCRESEARCH.redraw();sendMenu();}
+  window.scrollTo(0,0);drawAll();drawHist(jget('bcsim-hist',[]));if(id==='pesquisa'&&window.BCRESEARCH)BCRESEARCH.redraw();if(id==='caos'&&window.CHAOSUI)CHAOSUI.redraw();sendMenu();}
 function appInit(){
   document.documentElement.classList.add('app');
   const col=document.querySelector('main.layout > div');
@@ -1527,5 +1583,7 @@ if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 <script src="dsge.js"></script>
 <script src="dsge-models.js"></script>
 <script src="research.js"></script>
+<script src="chaos.js"></script>
+<script src="chaos-ui.js"></script>
 <script src="lang.js"></script>
 </body></html>

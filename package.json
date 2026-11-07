@@ -17,7 +17,7 @@
     "appId": "br.simulador.bancocentral",
     "productName": "Simulador do Banco Central",
     "directories": { "output": "dist" },
-    "files": ["app/**", "index.html", "lang.js", "platform.js", "config.js", "dsge.js", "dsge-models.js", "research.js", "package.json"],
+    "files": ["app/**", "index.html", "lang.js", "platform.js", "config.js", "dsge.js", "dsge-models.js", "research.js", "chaos.js", "chaos-ui.js", "package.json"],
     "win": { "target": "portable", "signAndEditExecutable": false },
     "portable": { "artifactName": "Simulador-do-Banco-Central-${version}.exe" }
   }
