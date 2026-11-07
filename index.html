@@ -211,6 +211,27 @@ select,input,textarea{border-radius:10px}
 table th{padding-block:8px}
 footer{margin-top:10px}
 @media (max-width:640px){.mast .wrap{padding-block:22px 18px}.card canvas{height:170px}.rate .big{font-size:2.1rem}}
+
+/* ===== v3: conquistas, tutorial, barra para celular ===== */
+.ach{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:8px}
+.ach div{border:1px solid var(--rule);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:var(--paper)}
+.ach div b{font-size:.88rem}.ach div span{font-size:.76rem;color:var(--muted)}
+.ach div.on{border-color:var(--gold);background:var(--band)}
+.ach div:not(.on){opacity:.55}
+.ach div.on b::before{content:"★ ";color:var(--gold)}
+dialog{border:0;border-radius:18px;padding:0;max-width:min(480px,calc(100vw - 32px));background:var(--surface);color:var(--ink);box-shadow:0 24px 60px -20px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(10,18,14,.55);backdrop-filter:blur(3px)}
+.tut-body{padding:22px 22px 6px}.tut-body h2{margin:6px 0 8px;font-size:1.3rem}.tut-body p{margin:0;color:var(--muted);line-height:1.55}
+.tut-actions{padding:16px 22px 22px;justify-content:flex-end}.tut-actions .btn{flex:none}
+.mbar{display:none}
+@media (max-width:980px){
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;gap:14px;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right));background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--rule);box-shadow:0 -8px 24px -16px rgba(0,0,0,.35)}
+  .mbar .btn{flex:1;max-width:200px}
+  body{padding-bottom:78px}
+  .toast{bottom:calc(88px + env(safe-area-inset-bottom))}
+  .status .wrap{grid-template-columns:repeat(2,1fr)}
+  .desk{position:static;max-height:none;overflow:visible}
+}
 </style>
 
 <header class="mast">
@@ -221,9 +242,11 @@ footer{margin-top:10px}
       <h1>Simulador do Banco Central</h1>
       <p id="tagline">Leve o IPCA à meta de 3% sem sacrificar o emprego. A Selic leva meses para agir.</p>
     </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="btnHow">Como jogar</button>
     <div class="seg" role="group" aria-label="Versão do jogo">
       <button id="modeBR" aria-pressed="true">Brasil · BCB</button>
       <button id="modeCL" aria-pressed="false">Clássico</button>
+    </div>
     </div>
   </div>
 </header>
@@ -240,8 +263,15 @@ footer{margin-top:10px}
 </section>
 
 <nav class="tabs" aria-label="Seções"><div class="wrap">
-  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
+  <a href="#painel">Painel</a><a href="#previsao">Previsão</a><a href="#monitores">Monitores</a><a href="#mercados">Mercados e famílias</a><a href="#governo">Governo</a><a href="#compartilhar">Compartilhar</a><a href="#historico">Conquistas</a><a href="#ranking">Ranking</a><a href="#diario">Diário</a>
 </div></nav>
+
+<div class="wrap" id="saveWrap" hidden>
+  <div class="banner" style="margin-top:14px;border-left-color:var(--accent)">
+    <div><strong>Partida salva encontrada</strong><div id="saveText" class="hint"></div></div>
+    <div class="row"><button class="btn primary" id="btnContinue">Continuar partida</button><button class="btn" id="btnDiscard">Descartar</button></div>
+  </div>
+</div>
 
 <div class="wrap" id="bannerWrap" hidden>
   <div class="banner">
@@ -417,6 +447,12 @@ footer{margin-top:10px}
         <select id="scenSel"></select>
         <label class="label" for="modelSel">Modelo</label>
         <select id="modelSel"></select>
+        <label class="label" for="diffSel">Dificuldade</label>
+        <select id="diffSel">
+          <option value="e">Fácil · choques menores e mais raros</option>
+          <option value="n" selected>Normal</option>
+          <option value="h">Difícil · choques maiores e mais frequentes</option>
+        </select>
         <label class="label" for="optSel">Opções da economia</label>
         <select id="optSel"></select>
         <p class="hint" id="optHint">Ciclo de crédito: juro real baixo por muito tempo infla o crédito e os ativos e eleva o risco de crise. Reparo de dívida: após a crise, as famílias poupam para quitar dívidas. Oferta por causa: choques de alimentos e energia pesam mais em orçamentos apertados.</p>
@@ -510,6 +546,21 @@ footer{margin-top:10px}
   </div>
 </section>
 
+<section class="band-sec" id="historico">
+  <div class="wrap">
+    <div class="sec-head"><h2>Conquistas e histórico</h2><span class="label" id="achCount">—</span></div>
+    <p class="intro">Conquistas ficam salvas neste navegador. O histórico guarda as últimas partidas que chegaram ao fim.</p>
+    <div class="share">
+      <div class="card"><h3><span>Conquistas</span></h3><div class="ach" id="achBox"></div></div>
+      <div class="card"><h3><span>Suas partidas</span><span class="num" id="histAvg">—</span></h3>
+        <canvas id="cHist" style="height:150px"></canvas>
+        <div class="tbl-wrap"><table><thead><tr><th>Cenário</th><th>Pontos</th><th>Meses</th><th>Resultado</th></tr></thead><tbody id="histBody"></tbody></table></div>
+        <div class="row" style="margin-top:8px"><button class="btn" id="histClear">Limpar histórico</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="band-sec" id="ranking">
   <div class="wrap">
     <div class="sec-head"><h2>Ranking</h2><span class="label" id="rkMode">—</span></div>
@@ -542,6 +593,17 @@ footer{margin-top:10px}
 
 <footer><div class="wrap">Modelo didático, inspirado em simuladores de política monetária. Parâmetros aproximados; não é previsão. Versão <span id="ver" class="mono">1.0</span>.</div></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="mbar" id="mbar"><div><div class="label">Mês</div><b class="mono" id="mbMonth">—</b></div><div><div class="label" id="mbRateL">Juro</div><b class="mono" id="mbRate">—</b></div><button class="btn primary" id="mbStep">Avançar ▸</button></div>
+
+<dialog id="tut">
+  <div class="tut-body">
+    <div class="label" id="tutStep">1 de 5</div>
+    <h2 id="tutTitle">—</h2>
+    <p id="tutText">—</p>
+  </div>
+  <div class="row tut-actions"><button class="btn" id="tutSkip">Pular</button><button class="btn" id="tutPrev">Voltar</button><button class="btn primary" id="tutNext">Próximo</button></div>
+</dialog>
 
 <script id="model">
 /* ============== MODELO ECONÔMICO (sem DOM) ============== */
@@ -577,6 +639,7 @@ const MODELS={
 const OPTS={'':'Opções · nenhuma',c:'Opções · ciclo de crédito (exp.)',cb:'Opções · ciclo de crédito + reparo de dívida (exp.)',s:'Opções · choques de oferta por causa (exp.)',cs:'Opções · ciclo de crédito + oferta (exp.)',cbs:'Opções · reparo de dívida + oferta (exp.)'};
 function crisis(s,spJump,demHit,msg){
   if(!s.fin){s.dem+=demHit*0.5;log(s,msg.replace(/Crise financeira:|Quebra de um grande banco de investimento:/,'Choque de demanda:')+' (modelo sem setor financeiro: só o efeito sobre a demanda).','alert');return;}
+  s.crisisCount++;
   if(s.cfg.credit){if(s.cfg.repair)s.repairLeft=36;else s.cg*=0.5;s.ap-=15;}
   let k=s.elf?0.5:1; if(!s.elf && s.bankCap<9) k*=1.3;
   s.crisisSp+=spJump*k; s.dem+=demHit*k; s.F*=0.45; s.crisisCool=36; s.crisisLoss+=2.2*k;
@@ -594,6 +657,24 @@ const SCEN={
       ev(s,m){if(m===2){s.dem-=10;s.fxShock+=25;log(s,'Pandemia: lojas fecham, atividade despenca e o dólar dispara.','alert');}
               if(m===4){s.fiscal+=4;log(s,'Governo aprova auxílio emergencial amplo.','ev');}
               if(m===14){addImp(s,4,10);log(s,'Commodities em alta e crise hídrica: bandeira tarifária de escassez.','ev');}}},
+    r94:{name:'Plano Real · fim da hiperinflação (1994) · difícil',init(s){set(s,{i:20,core:7.5,piE:7,C:0.32,y:0.8,u:5.8,fiscalRisk:1.2,F:0.4,sMul:1.1});},
+      ev(s,m){if(m===0)log(s,'Lançamento do Real: a moeda nova ancora os preços, mas a memória inflacionária ainda é forte.','ev');
+              if(m===9){s.fxShock+=18;s.dem-=1;log(s,'Crise do México (efeito tequila): fuga de capitais dos emergentes.','ev');}}},
+    c02:{name:'Crise de 2002 · eleição e dólar · difícil',init(s){set(s,{i:18.5,core:5.8,piE:6,C:0.5,y:-0.5,u:7.8,fiscalRisk:1.8,F:0.4});},
+      ev(s,m){if(m===1){s.fxShock+=28;s.fiscalRisk+=1.1;log(s,'Corrida contra o real: o dólar dispara com a incerteza eleitoral.','alert');}
+              if(m===7){s.dem-=1.2;log(s,'Racionamento de crédito externo: linhas de comércio exterior encolhem.','ev');}
+              if(m===16){s.fiscalRisk-=1.2;log(s,'Compromisso fiscal reafirmado: o prêmio de risco começa a ceder.','good');}}},
+    g08:{name:'Crise global de 2008',init(s){set(s,{i:13.75,core:5.5,piE:5.2,C:0.62,y:1.6,u:7.8,F:0.5});},
+      ev(s,m){if(m===3){s.dem-=6;s.fxShock+=32;log(s,'Quebra do Lehman Brothers: o crédito global congela e o real despenca.','alert');}
+              if(m===4)crisis(s,2.8,-3,'Crise financeira: bancos médios sofrem com a falta de liquidez em dólar.');
+              if(m===14){s.dem+=1.2;log(s,'Estímulos fiscais e crédito dos bancos públicos sustentam a retomada.','ev');}}},
+    t13:{name:'Taper tantrum e ciclo de alta (2013–15)',init(s){set(s,{i:7.25,core:5.8,piE:5.6,C:0.55,y:0.5,u:5.4,fiscalRisk:0.8});},
+      ev(s,m){if(m===4){s.fxShock+=22;log(s,'Fed sinaliza a redução de estímulos: capital deixa os emergentes.','ev');}
+              if(m===18){addImp(s,4,8);log(s,'Realinhamento de energia elétrica e combustíveis.','ev');}
+              if(m===24){s.fiscalRisk+=1.2;log(s,'Deterioração fiscal e pedaladas: o mercado perde a confiança nas contas.','alert');}}},
+    g18:{name:'Greve dos caminhoneiros e Previdência (2018–19)',init(s){set(s,{i:6.5,core:2.9,piE:3.8,C:0.6,y:-3,u:12,ustarBase:8.8,fiscalRisk:1.3});},
+      ev(s,m){if(m===4){addImp(s,3.5,3);s.fxShock+=14;s.dem-=1.2;log(s,'Greve dos caminhoneiros: desabastecimento e alta de preços; o dólar sobe.','alert');}
+              if(m===16){s.fiscalRisk-=0.9;s.dem+=0.8;log(s,'Reforma da Previdência aprovada: o risco fiscal cai.','good');}}},
     rand:{name:'Era aleatória',init(s,r){randInit(s,r);}}
   },
   CL:{
@@ -606,6 +687,20 @@ const SCEN={
     gr:{name:'Grande Recessão (2006–2015)',init(s){set(s,{i:5.25,core:2.6,piE:2.3,C:0.8,y:1.2,u:4.6,F:0.9});},
       ev(s,m){if(m===20)crisis(s,4.5,-5,'Quebra de um grande banco de investimento: o crédito congela.');
               if(m>20&&m<60)s.rstarBase-=0.05;}},
+    vol:{name:'Choque Volcker (1979–82) · difícil',init(s){set(s,{i:10,core:8,piE:7.8,C:0.3,y:1,u:5.6,sMul:1.1});},
+      ev(s,m){if(m===2){addImp(s,3.5,6);s.dem-=0.5;log(s,'Segundo choque do petróleo: a energia volta a subir.','alert');}}},
+    jap:{name:'Japão dos anos 1990 · armadilha da deflação · difícil',init(s){set(s,{i:2,core:0.8,piE:0.6,C:0.7,y:-2,u:3.6,ustarBase:3.4,rstarBase:-0.8,F:0.8});},
+      ev(s,m){if(m===3)crisis(s,3,-3,'Estouro da bolha de ativos: bancos acumulam crédito podre.');
+              if(m>12&&m<84)s.rstarBase-=0.012;}},
+    eur:{name:'Crise da dívida europeia (2011)',init(s){set(s,{i:1.5,core:2.2,piE:2,C:0.78,y:-0.5,u:5.8,F:0.7});},
+      ev(s,m){if(m===6)crisis(s,3,-3,'Crise de dívida soberana: bancos e governos entram numa espiral.');
+              if(m===14){s.dem-=1;log(s,'Austeridade fiscal em vários países pesa sobre a demanda.','ev');}}},
+    pos:{name:'Inflação pós-pandemia (2021–23)',init(s){set(s,{i:0.25,core:4.2,piE:3,C:0.6,y:2,u:4,fiscal:2});},
+      ev(s,m){if(m===0){addImp(s,5,8);log(s,'Gargalos nas cadeias de suprimento elevam os preços de bens.','ev');}
+              if(m===14){addImp(s,4,6);log(s,'Guerra na Ucrânia: energia e alimentos disparam.','alert');}}},
+    emg:{name:'Fuga de capitais de um emergente · difícil',init(s){set(s,{i:6,core:5,piE:5,C:0.4,y:0,u:5,fiscalRisk:1.2,F:0.5});},
+      ev(s,m){if(m===3){s.fiscalRisk+=2.5;s.dem-=2.5;addImp(s,3,6);log(s,'Fuga de capitais: a moeda despenca e os importados encarecem.','alert');}
+              if(m===15)crisis(s,2.5,-2.5,'Crise financeira: bancos locais sofrem com a dívida em moeda estrangeira.');}},
     rand:{name:'Era aleatória',init(s,r){randInit(s,r);}}
   }
 };
@@ -688,7 +783,7 @@ function newState(cfg){
     ed:0,es:0,efx:0,fxShock:0,dep:0,depS:0,FX:100,impQ:[],impNow:0,laborM:0,sMul:1,
     guid:null,elf:false,ccyb:false,ccybB:0,lost:0,scoreSum:0,scoreN:0,outRun:0,cartas:0,hiRun:0,over:null,reconduzido:false,
     logs:[],H:[],dec:[],ngBase:0,y10start:0,mscore:100,contrib:{pol:0,mkt:0,cred:0,fis:0,oth:0},
-    fin:MODELS[cfg.model].fin,ex:MODELS[cfg.model].ex,noShock:false,
+    fin:MODELS[cfg.model].fin,ex:MODELS[cfg.model].ex,noShock:false,crisisCount:0,bandRun:0,bandMax:0,
     cg:0,ap:0,repairLeft:0,anc:M.target,ess:0,hhInc:100,hhShare:0.6,buf:3,margin:100,capLoss:0,debt:M.fx?75:60};
   SCEN[cfg.mode][cfg.scen].init(s,s.rng);
   if(!s.fin) s.F=Math.min(s.F,0.2);
@@ -748,6 +843,7 @@ function step(s,d){
   if(s.over) return;
   const M=s.M,r=s.rng,T=M.target,B=M.band;
   const quiet=s.noShock; // previsão da equipe: sem novos choques
+  const dm=s.cfg.diff==='e'?0.6:s.cfg.diff==='h'?1.4:1; // dificuldade: escala dos choques
   const z=[];for(let k=0;k<6;k++)z.push(quiet?0:gauss(r));const uu=quiet?[1,1,1]:[r(),r(),r()];
   const prevI=s.i, open=rateOpen(s);
   if(open) s.i=roundRate(s,d.i);
@@ -759,7 +855,7 @@ function step(s,d){
     else if(M.copom) log(s,'Copom mantém a Selic em '+fmt(s.i,2)+'%.','dec');}
   guidanceCheck(s,prevI);
   const sc=SCEN[s.cfg.mode][s.cfg.scen]; if(sc.ev&&!quiet) sc.ev(s,s.m);
-  if(uu[0]<(s.cfg.supply?0.014:0.007)&&s.m>3) randomEvent(s,uu[1]);
+  if(uu[0]<(s.cfg.supply?0.014:0.007)*dm&&s.m>3) randomEvent(s,uu[1]);
 
   s.fiscal*=0.97; s.fiscalR*=0.99; s.fiscalRisk*=0.975; s.dem*=0.93; s.fxShock*=0.9; s.crisisSp*=0.93; s.crisisLoss*=0.97;
   if(s.crisisCool>0)s.crisisCool--; if(s.laborM>0)s.laborM--; if(s.gpotBoost>0)s.gpotBoost--;
@@ -768,8 +864,8 @@ function step(s,d){
   s.ccybB=s.ccyb?Math.min(1,s.ccybB+1/12):Math.max(0,s.ccybB-1/6);
   fin(s);
 
-  s.ed=0.9*s.ed+0.22*z[0];
-  s.es=0.85*s.es+(s.cfg.supply?0.32:0.18)*s.sMul*z[1];
+  s.ed=0.9*s.ed+0.22*z[0]*dm;
+  s.es=0.85*s.es+(s.cfg.supply?0.32:0.18)*s.sMul*z[1]*dm;
   s.efx=0.85*s.efx+0.55*z[2];
 
   // transmissão com defasagem em dois estágios
@@ -841,6 +937,7 @@ function step(s,d){
 
   // credibilidade e expectativas
   const g=Math.abs(s.piYoY-T);
+  if(g<=B){s.bandRun++;if(s.bandRun>s.bandMax)s.bandMax=s.bandRun;}else s.bandRun=0;
   const improving=Math.abs(s.pi3-T)<g-0.5;
   let dC=g<B*0.5?0.008*(1-s.C):g<B?0.003:improving?0:-Math.min(0.01,0.0025*(g-B));
   if(s.piYoY>T+B&&s.rgap>0.5)dC+=0.003*Math.min(3,s.rgap);
@@ -896,13 +993,13 @@ function step(s,d){
 function score(s){return s.scoreN?s.scoreSum/s.scoreN:0;}
 
 /* ---------- Códigos, registro e replay ---------- */
-function encode(cfg){return cfg.mode+'-'+cfg.scen+'-'+cfg.model+(cfg.credit?'C':'')+(cfg.repair?'B':'')+(cfg.supply?'S':'')+'-'+(cfg.seed>>>0).toString(36).toUpperCase();}
+function encode(cfg){return cfg.mode+'-'+cfg.scen+'-'+cfg.model+(cfg.credit?'C':'')+(cfg.repair?'B':'')+(cfg.supply?'S':'')+(cfg.diff==='e'?'E':cfg.diff==='h'?'D':'')+'-'+(cfg.seed>>>0).toString(36).toUpperCase();}
 function decode(code){const p=String(code).trim().split('-');if(p.length!==4)return null;
   const mode=p[0].toUpperCase();if(!MODES[mode])return null;const scen=p[1];if(!SCEN[mode][scen])return null;
   const f=p[2].toUpperCase();const seed=parseInt(p[3],36);if(!isFinite(seed))return null;
   const model=MODELS[f[0]]?f[0]:'R',fin=MODELS[model].fin;
   const credit=!!fin&&f.indexOf('C')>0;
-  return {mode,scen,model,credit,repair:credit&&f.indexOf('B')>0,supply:!!fin&&f.indexOf('S')>0,seed:seed>>>0,endless:false};}
+  return {mode,scen,model,credit,repair:credit&&f.indexOf('B')>0,supply:!!fin&&f.indexOf('S')>0,diff:f.indexOf('E')>0?'e':f.indexOf('D')>0?'h':'n',seed:seed>>>0,endless:false};}
 function packDec(d){return [d.i,Math.round(d.qe*100),d.elf?1:0,d.ccyb?1:0,d.g||0,(d.gov&&d.gov.length)?d.gov.join('+'):0];}
 function unpackDec(a){return {i:a[0],qe:a[1]/100,elf:!!a[2],ccyb:!!a[3],g:a[4]||null,gov:a[5]?String(a[5]).split('+'):[]};}
 
@@ -921,6 +1018,20 @@ function simulate(cfg,decs,policy,upto,ngRule){
   return {score:score(s),pi:avg('piYoY'),u:avg('u'),lost:s.lost,H:s.H};
 }
 
+/* Conquistas: avaliadas a cada mês (algumas só valem com o mandato encerrado). */
+const fimOk=s=>!!s.over&&s.over.t==='Fim do mandato';
+const ACH=[
+  {id:'fim',n:'Mandato cumprido',d:'Conclua um mandato inteiro.',ok:fimOk},
+  {id:'pouso',n:'Pouso suave',d:'Termine o mandato com média de 80 pontos ou mais.',ok:s=>fimOk(s)&&score(s)>=80},
+  {id:'ancora',n:'Âncora firme',d:'Chegue ao fim do mandato com credibilidade de 90% ou mais.',ok:s=>fimOk(s)&&s.C>=0.9},
+  {id:'banda',n:'Dentro da banda',d:'Fique 36 meses seguidos com a inflação dentro da banda da meta.',ok:s=>s.bandMax>=36},
+  {id:'semcrise',n:'Sem crises',d:'Conclua o mandato sem nenhuma crise financeira, num modelo com setor financeiro.',ok:s=>fimOk(s)&&!!s.fin&&s.crisisCount===0},
+  {id:'crise',n:'Gestor de crise',d:'Atravesse uma crise financeira e termine o mandato.',ok:s=>fimOk(s)&&s.crisisCount>0},
+  {id:'duro',n:'Cenário difícil vencido',d:'Conclua um cenário marcado como difícil com 60 pontos ou mais.',ok:s=>fimOk(s)&&/difícil/.test(SCEN[s.cfg.mode][s.cfg.scen].name)&&score(s)>=60},
+  {id:'reconduzido',n:'Reconduzido',d:'No modo Brasil, seja reconduzido ao fim dos quatro primeiros anos.',ok:s=>!!s.reconduzido}
+];
+function achievements(s){return ACH.filter(a=>a.ok(s)).map(a=>a.id);}
+
 /* Previsão da equipe: 24 meses sem novos choques, com os ajustes atuais mantidos ou com a regra de Taylor. */
 function forecast(s,policy,n,iNow){
   const rng=s.rng,lg=s.logs,H=s.H,dec=s.dec;s.rng=null;s.logs=[];s.H=[];s.dec=[];
@@ -934,7 +1045,7 @@ function forecast(s,policy,n,iNow){
   return {pi,u};
 }
 
-return {OFF,VERSION,MESES,MODES,MODELS,OPTS,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,forecast,fmt};
+return {OFF,VERSION,MESES,MODES,MODELS,OPTS,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,forecast,ACH,achievements,fmt};
 })();
 </script>
 
@@ -960,7 +1071,7 @@ function start(c,replayDecs){
   setupMode(); $('rate').value=st.i; render();
 }
 function optFlags(){const model=$('modelSel').value||'R',fin=S.MODELS[model].fin,o=fin?$('optSel').value:'';
-  return {model,credit:o.includes('c'),repair:o.includes('b'),supply:o.includes('s')};}
+  return {model,credit:o.includes('c'),repair:o.includes('b'),supply:o.includes('s'),diff:$('diffSel').value||'n'};}
 function newCfg(mode,scen){return Object.assign({mode,scen,seed:randSeed(),endless:$('oEndless').checked},optFlags());}
 
 function setupMode(){
@@ -990,6 +1101,7 @@ function setupMode(){
   const ms=$('modelSel');if(!ms.options.length){for(const k in S.MODELS){const o=document.createElement('option');o.value=k;o.textContent=S.MODELS[k].n;ms.appendChild(o);}
     const os=$('optSel');for(const k in S.OPTS){const o=document.createElement('option');o.value=k;o.textContent=S.OPTS[k];os.appendChild(o);}}
   ms.value=cfg.model;$('optSel').value=(cfg.credit?(cfg.repair?'cb':'c'):'')+(cfg.supply?'s':'');
+  $('diffSel').value=cfg.diff||'n';
   $('optSel').disabled=!S.MODELS[cfg.model].fin;$('optSel').title=$('optSel').disabled?'As opções precisam de um modelo com setor financeiro':'';
   $('oEndless').checked=!!cfg.endless;
   $('scenLabel').textContent=S.SCEN[M.id][cfg.scen].name;
@@ -1016,7 +1128,9 @@ function advance(){
   if(!st||st.over){stopAuto();return;}
   const d=currentDecision();st.dec.push(S.packDec(d));S.step(st,d);pend={g:null,gov:[]};
   $('rate').value=st.i;render();
-  if(st.over){stopAuto();window.dispatchEvent(new Event('bcsim-over'));}
+  checkAch();
+  if(st.over){stopAuto();recordHist();try{localStorage.removeItem('bcsim-save');}catch(e){}window.dispatchEvent(new Event('bcsim-over'));}
+  else saveGame();
 }
 function startAuto(){if(timer||!st||st.over)return;timer=setInterval(advance,$('oFast').checked?220:600);$('btnAuto').textContent='❚❚ Pausar';$('btnAuto').classList.add('on');}
 function stopAuto(){if(timer){clearInterval(timer);timer=null;}$('btnAuto').textContent='▶ Rodar automático';$('btnAuto').classList.remove('on');}
@@ -1055,6 +1169,7 @@ function render(){
   $('rateHint').textContent=s.over?'Partida encerrada.':auto?'O piloto automático decide os juros ao avançar.':!open?'A Selic só muda nas reuniões do Copom. Avance até a próxima.':'Neutro hoje: '+fmt(s.rstar+s.piE,2)+'% (juro real neutro '+fmt(s.rstar,1)+'% + expectativa '+fmt(s.piE,1)+'%).';
   const q=parseInt($('qe').value,10);$('qeVal').textContent=q===0?'Neutro':(q>0?'QE ':'QT ')+Math.abs(q)+'%';
   $('btnStep').disabled=!!s.over;
+  $('mbStep').disabled=!!s.over;$('mbMonth').textContent=mon+' · A'+yr;$('mbRate').textContent=fmt(s.i,2)+'%';$('mbRateL').textContent=BR?'Selic':'Juro';
   $('mExp').textContent=pct(s.piE);$('mCred').textContent=fmt(s.C*100,0)+'%';
   $('mGap').textContent=sg(s.y)+'%';$('mRgap').textContent=sg(s.i-s.piE-s.rstar,2);
   const fr=Math.min(1,s.F/1.2);$('fragMk').style.left=(fr*100)+'%';
@@ -1207,7 +1322,7 @@ $('btnEndless').addEventListener('click',()=>{cfg.endless=true;st.cfg.endless=tr
 $('fgAnn').addEventListener('click',()=>{pend.g=$('fgSel').value;render();toast('Anúncio entra com a próxima decisão.');});
 $('fgWd').addEventListener('click',()=>{if(!st.guid){toast('Não há compromisso em vigor.');return;}pend.g='withdraw';render();});
 function cfgChange(){start(Object.assign({mode:cfg.mode,scen:$('scenSel').value,seed:cfg.seed,endless:$('oEndless').checked},optFlags()));}
-['scenSel','modelSel','optSel'].forEach(id=>$(id).addEventListener('change',cfgChange));
+['scenSel','modelSel','optSel','diffSel'].forEach(id=>$(id).addEventListener('change',cfgChange));
 $('oEndless').addEventListener('change',()=>{cfg.endless=$('oEndless').checked;st.cfg.endless=cfg.endless;if(cfg.endless)st.over=null;render();});
 $('btnCopyCode').addEventListener('click',()=>copy(S.encode(cfg),'Código copiado.'));
 $('btnExport').addEventListener('click',()=>{const txt=JSON.stringify({v:S.VERSION,code:S.encode(cfg),dec:st.dec});$('loadBox').value=txt;copy(txt,'Registro copiado ('+st.dec.length+' decisões).');});
@@ -1224,14 +1339,65 @@ document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,sele
   if(e.key==='n'||e.key==='N'){advance();}});
 
 let raf=0;const redraw=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{drawAll();drawGuil();});};
-window.addEventListener('resize',redraw);
+window.addEventListener('resize',()=>{redraw();drawHist(jget('bcsim-hist',[]));});
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);}catch(e){}
 new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class']});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
 
 const m0=pref('bcsim-mode')==='CL'?'CL':'BR';
+/* ---------- salvar/continuar, histórico e conquistas ---------- */
+const jget=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}};
+const jset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
+function saveGame(){if(!st||st.over||!st.dec.length)return;jset('bcsim-save',{code:S.encode(cfg),dec:st.dec,endless:!!cfg.endless});}
+function showSaved(){const sv=jget('bcsim-save',null);const c=sv&&S.decode(sv.code);
+  if(!c||!Array.isArray(sv.dec)||sv.dec.length<1){$('saveWrap').hidden=true;return;}
+  $('saveText').textContent=S.SCEN[c.mode][c.scen].name+' · mês '+sv.dec.length+' · '+sv.code;$('saveWrap').hidden=false;}
+$('btnContinue').addEventListener('click',()=>{const sv=jget('bcsim-save',null);const c=sv&&S.decode(sv.code);if(!c)return;
+  c.endless=!!sv.endless;pref('bcsim-mode',c.mode);start(c,sv.dec);$('saveWrap').hidden=true;toast('Partida retomada no mês '+sv.dec.length+'.');});
+$('btnDiscard').addEventListener('click',()=>{try{localStorage.removeItem('bcsim-save');}catch(e){}$('saveWrap').hidden=true;});
+
+function renderAch(){const got=jget('bcsim-ach',[]);
+  $('achBox').innerHTML=S.ACH.map(a=>'<div class="'+(got.indexOf(a.id)>=0?'on':'')+'"><b>'+a.n+'</b><span>'+a.d+'</span></div>').join('');
+  $('achCount').textContent=got.length+' de '+S.ACH.length;}
+function checkAch(){const got=jget('bcsim-ach',[]);let ch=false;
+  S.achievements(st).forEach(id=>{if(got.indexOf(id)<0){got.push(id);ch=true;toast('Conquista: '+S.ACH.find(a=>a.id===id).n);}});
+  if(ch){jset('bcsim-ach',got);renderAch();}}
+function recordHist(){if(!st.over||st.m<12)return;const h=jget('bcsim-hist',[]);
+  h.unshift({code:S.encode(cfg),scen:S.SCEN[st.M.id][cfg.scen].name,score:S.score(st),m:st.m,res:st.over.t});jset('bcsim-hist',h.slice(0,30));renderHist();}
+function renderHist(){const h=jget('bcsim-hist',[]);
+  $('histBody').innerHTML=h.length?h.slice(0,12).map(r=>'<tr><td style="white-space:normal">'+r.scen+'</td><td>'+fmt(r.score,0)+'</td><td>'+r.m+'</td><td>'+r.res+'</td></tr>').join('')
+    :'<tr><td colspan="4" style="text-align:left;color:var(--muted)">Nenhuma partida concluída ainda.</td></tr>';
+  $('histAvg').textContent=h.length?'média '+fmt(h.reduce((a,b)=>a+b.score,0)/h.length,0)+' pts':'—';drawHist(h);}
+function drawHist(h){const cv=$('cHist');if(!cv)return;const W=cv.clientWidth,Hh=cv.clientHeight;if(!W)return;const dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(Hh*dpr);const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,Hh);
+  CSS=getComputedStyle(document.documentElement);const L=26,B=16,T=6,pw=W-L-4,ph=Hh-B-T;
+  c.font='10px "IBM Plex Mono", monospace';c.fillStyle=col('--muted');c.strokeStyle=col('--rule');c.textAlign='right';c.textBaseline='middle';
+  [0,50,100].forEach(v=>{const y=T+ph*(1-v/100);c.beginPath();c.moveTo(L,y);c.lineTo(W-4,y);c.stroke();c.fillText(v,L-4,y);});
+  const d=h.slice(0,20).reverse();if(!d.length)return;const bw=Math.min(28,pw/d.length-4);
+  d.forEach((r,i)=>{const x=L+(i+0.5)*pw/d.length,y=T+ph*(1-r.score/100);c.fillStyle=col(r.score>=60?'--s-r':r.score>=40?'--s-exp':'--s-inf');c.fillRect(x-bw/2,y,bw,T+ph-y);});}
+$('histClear').addEventListener('click',()=>{try{localStorage.removeItem('bcsim-hist');}catch(e){}renderHist();});
+
+/* ---------- tutorial ---------- */
+const TUT=[['Seu papel','Você comanda o banco central. Seu trabalho é levar a inflação à meta sem deixar o desemprego subir. A política monetária age com defasagem de 9 a 18 meses, então decida olhando para onde a economia vai, não só para onde está.'],
+ ['A mesa de política','Na coluna da direita (no topo, no celular) você escolhe os juros e o balanço do banco central (QE/QT). No modo Brasil a Selic só muda nas reuniões do Copom, 8 vezes por ano.'],
+ ['Avançar no tempo','"Avançar um mês" executa a sua decisão e mostra o resultado. Também há o modo automático e o atalho N no teclado. Quando o mandato termina, sua pontuação é a média de estabilidade.'],
+ ['Leia os gráficos','Inflação com a banda da meta, desemprego contra o natural e juro real contra o neutro. A previsão da equipe projeta 24 meses sem novos choques, com os seus ajustes mantidos e com o piloto de Taylor.'],
+ ['Ferramentas e metas','Use pilotos automáticos, forward guidance e as medidas de estabilidade financeira. Troque cenário, modelo e dificuldade em "Configuração da partida". Suas conquistas e partidas ficam salvas, e o ranking compara quem jogou o mesmo código.']];
+let tutI=0;
+function tutShow(){const [t,x]=TUT[tutI];$('tutStep').textContent=(tutI+1)+' de '+TUT.length;$('tutTitle').textContent=t;$('tutText').textContent=x;
+  $('tutPrev').hidden=tutI===0;$('tutNext').textContent=tutI===TUT.length-1?'Começar':'Próximo';}
+function tutOpen(){tutI=0;tutShow();const d=$('tut');if(d.showModal&&!d.open)d.showModal();else d.setAttribute('open','');}
+function tutClose(){pref('bcsim-tut','1');const d=$('tut');if(d.close)d.close();else d.removeAttribute('open');}
+$('tutNext').addEventListener('click',()=>{if(tutI>=TUT.length-1)tutClose();else{tutI++;tutShow();}});
+$('tutPrev').addEventListener('click',()=>{if(tutI>0){tutI--;tutShow();}});
+$('tutSkip').addEventListener('click',tutClose);
+$('btnHow').addEventListener('click',tutOpen);
+$('mbStep').addEventListener('click',advance);
+
 window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg)};
-start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:false,repair:false,supply:false,seed:randSeed(),endless:false});
+start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:false,repair:false,supply:false,diff:'n',seed:randSeed(),endless:false});
+renderAch();renderHist();showSaved();
+if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
