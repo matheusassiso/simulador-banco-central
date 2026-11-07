@@ -65,5 +65,41 @@ t('parser: precedência (−2^2 = −4; 2^3^2 = 512)', () => {
   near(nm.p, -4, 1e-12); near(nm.q, 512, 1e-12);
 });
 
+// ---------- política ótima (Galí 2015, cap. 5) ----------
+const cpS = k => D.solve(D.parse(M.MODELS[k].text));
+const W = s => ({ pi: 1, x: s.lin.names.alpha });
+t('Discrição: π = u/(1 + κ²/α − βρ) e x = −(κ/α)·π (fórmula fechada)', () => {
+  const s = cpS('cp_discr'); assert(s.determinate, s.message);
+  const p = s.lin.names, ir = D.irf(s, 'eu', 8, 1);
+  for (let k = 0; k < 8; k++) {
+    const u = Math.pow(p.rhou, k), pi = u / (1 + p.kappa * p.kappa / p.alpha - p.beta * p.rhou);
+    near(ir.pi[k], pi, 1e-10, 'pi[' + k + ']'); near(ir.x[k], -(p.kappa / p.alpha) * pi, 1e-10, 'x[' + k + ']');
+  }
+});
+t('Compromisso: o nível de preços (soma de π) é −(α/κ)·x em todo o horizonte', () => {
+  const s = cpS('cp_commit'); assert(s.determinate, s.message);
+  const p = s.lin.names, ir = D.irf(s, 'eu', 40, 1); let P = 0;
+  for (let k = 0; k < 40; k++) { P += ir.pi[k]; near(P, -(p.alpha / p.kappa) * ir.x[k], 1e-9, 'k=' + k); }
+});
+t('Perda de bem-estar: compromisso < discrição < regra de Taylor', () => {
+  const Lc = D.loss(cpS('cp_commit'), W(cpS('cp_commit'))), Ld = D.loss(cpS('cp_discr'), W(cpS('cp_discr'))), Lt = D.loss(cpS('cp_taylor'), W(cpS('cp_taylor')));
+  assert(Lc < Ld, 'compromisso ' + Lc + ' não é menor que discrição ' + Ld); assert(Ld < Lt, 'discrição ' + Ld + ' não é menor que Taylor ' + Lt);
+});
+
+// ---------- limite zero (estilo OccBin) ----------
+const zN = D.parse(M.MODELS.nk_zlb.text), zF = D.parse(M.MODELS.nk_zlb.floorText), iss = 1 / 0.99 - 1;
+t('ZLB: choque pequeno não bate no piso e iguala a solução linear', () => {
+  const r = D.occbin(zN, zF, {}, 'en', -0.0005, { floor: -iss }); assert(r.ok, r.message); assert(r.T === 0, 'T=' + r.T);
+});
+t('ZLB: choque grande fica no piso, o juro-sombra está abaixo do piso e a recessão é maior que a linear', () => {
+  const r = D.occbin(zN, zF, {}, 'en', -0.03, { floor: -iss }); assert(r.ok, r.message); assert(r.T > 0, 'T=' + r.T);
+  for (let k = 0; k < 40; k++) {
+    if (k < r.T) { near(r.path.i[k], -iss, 1e-10, 'i[' + k + '] no piso'); assert(r.path.ishadow[k] < -iss, 'sombra[' + k + ']'); }
+    else assert(r.path.ishadow[k] >= -iss - 1e-9, 'fora do piso, sombra[' + k + ']');
+  }
+  const minZ = Math.min(...r.path.x), minL = Math.min(...r.linear.x);
+  assert(minZ < minL, 'recessão ZLB ' + minZ + ' deveria ser maior que a linear ' + minL);
+});
+
 console.log('\n' + n + ' testes ok, ' + fails + ' falhas');
 process.exit(fails ? 1 : 0);
