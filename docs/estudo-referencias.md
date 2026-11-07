@@ -150,8 +150,24 @@ Limites: os desvios-padrão estão em decimais (os do artigo ÷ 100); não compa
 instalado); as equações de preços e salários foram validadas pelo limite sem rigidez e pela equivalência com a segunda fonte, não por números
 publicados.
 
+**SAMBA (parcial, rotulado como tal).** Baixei o artigo da Brazilian Review of Econometrics (2015, acesso aberto; texto limpo) e li a seção de
+modelo e as Tabelas 2 e 3. As equações do artigo estão na forma não linear; o sistema log-linearizado só existe no WP 239, cujo PDF tem a fonte
+cifrada (letras deslocadas, números e símbolos perdidos), então não dá para extrair sem ler as páginas como imagem. Reproduzir o SAMBA inteiro
+(quatro setores, importações como insumo, financiamento externo, regra fiscal, preços administrados, duas famílias) exigiria transcrever dezenas de
+equações log-lineares sem código oficial para conferir, então **não foi feito**. O que entrou:
+- calibração "Estrutura SW07 com parâmetros do SAMBA (parcial)": a estrutura fechada do SW07 com os valores do SAMBA onde há correspondência
+  direta (hábito 0,74; σ = 1,30; ajuste do investimento 3,42; Calvo 0,74 de preços e 0,75 de salários; indexações 0,33 e 0,49; suavização do juro
+  0,79; resposta à inflação 2,43 e ao hiato 0,16; η = 1; α = 0,448; δ = 0,015; crescimento 0,9% ao trimestre; gastos 20%; markups de 10% e 50%;
+  sem curvatura de Kimball);
+- quadro no painel Pesquisa dizendo o que está coberto e o que não está;
+- resultado, para um choque monetário de 0,32 (o desvio-padrão estimado no SAMBA): com os parâmetros do SW07 o produto cai −0,75% no pico
+  (trimestre 3) e o investimento −1,21%; com os do SAMBA o produto cai −0,40% e o investimento −0,31%, ambos já no trimestre 1: resposta menor
+  e menos em corcova, coerente com hábito e custo de ajuste menores. Dois testes (determinação, sinais e limite sem rigidez).
+Importante: isso mostra o que a calibração brasileira muda na estrutura do SW07; **não é** o SAMBA nem reproduz seus resultados (as
+participações de importação, o câmbio e a regra fiscal fazem parte da dinâmica dele).
+
 Pendente, com o motivo:
-- **SAMBA (WP 239) e FRB/US em JavaScript:** os trabalhos mais longos; seguem como estavam.
+- **SAMBA completo (WP 239) e FRB/US em JavaScript:** os trabalhos mais longos; seguem como estavam.
 
 ## 5. Próximos passos propostos
 

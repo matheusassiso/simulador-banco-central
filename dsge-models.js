@@ -250,6 +250,9 @@ const CALIB = {
     rpi: 1.7985, rhoi: 0.8258, ry: 0.0893, rdy: 0.2239, rho_a: 0.9676, rho_b: 0.2703, rho_g: 0.993, rho_q: 0.5724, rho_m: 0.3, rho_p: 0.8692, rho_w: 0.9546, theta_p: 0.7652, theta_w: 0.8936,
     sd_b: 0.001818513, sd_q: 0.0046017 },
     note: 'Valores iniciais do bloco estimated_params do arquivo de réplica do Pfeifer (uma reestimação com ruído de MA nos markups). Não são necessariamente os do artigo.' },
+  sw07_samba: { name: 'Estrutura SW07 com parâmetros do SAMBA (parcial)',
+    over: { habit: 0.74, sigma: 1.3, adj: 3.42, xip: 0.74, iotap: 0.33, xiw: 0.75, iotaw: 0.49, rhoi: 0.79, rpi: 2.43, ry: 0.16, rdy: 0, sigl: 1, alpha: 0.448, delta: 0.015, trend: 0.9, gshare: 0.2, fc: 1.1, lamw: 1.5, curvp: 0, curvw: 0 },
+    note: 'NÃO é o SAMBA. É a estrutura fechada do SW07 com os parâmetros estimados ou calibrados do SAMBA onde há correspondência direta (Tabelas 2 e 3 de Castro et al., 2015): hábito 0,74, σ = 1,30, custo de ajuste do investimento 3,42, Calvo de preços 0,74 e de salários 0,75, indexações 0,33 e 0,49, suavização do juro 0,79, resposta à inflação 2,43 e ao hiato 0,16, η = 1, α = 0,448, δ = 0,015, crescimento 0,9% ao trimestre, gastos 20% do PIB, markups de 10% (preços) e 50% (salários), sem curvatura de Kimball. Faltam: economia aberta e câmbio, importações como insumo, famílias rule-of-thumb, regra fiscal e preços administrados. Os choques seguem os do SW07.' },
   brasil: { name: 'Brasil (didática)', over: { alpha: 0.14, theta: 0.8, beta: 0.989, phi: 2, rhoa: 0.9, phipi: 1.5 },
     note: 'Didática, não estimada: α = 0,14 (importações ≈ 14% do PIB, ordem de grandeza), θ = 0,80 (preços mudam a cada ~5 trimestres), β = 0,989 (juro real de equilíbrio ≈ 4,5% ao ano), φ = 2, ρa = 0,9 e φπ = 1,5. Para a calibração estimada do Banco Central, ver o SAMBA (WP 239).' }
 };
@@ -271,7 +274,7 @@ const MODELS = {
   tank_notr: { name: 'TANK · sem transferências', text: tank('notr'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
   tank_const: { name: 'TANK · transferências constantes', text: tank('const'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
   tank_rank: { name: 'RANK · redistribuição total (sem heterogeneidade)', text: tank('rank'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
-  sw07: { name: 'Smets-Wouters (2007) · economia dos EUA, 33 variáveis', text: SW07, show: ['y', 'c', 'inv', 'pi', 'r', 'w'], calib: ['sw07_orig', 'sw07_rep'] },
+  sw07: { name: 'Smets-Wouters (2007) · economia dos EUA, 33 variáveis', text: SW07, show: ['y', 'c', 'inv', 'pi', 'r', 'w'], calib: ['sw07_orig', 'sw07_rep', 'sw07_samba'] },
   nk_zlb: { name: 'Limite zero do juro (piso em 0%)', text: zlb(false), floorText: zlb(true), show: ['x', 'pi', 'i', 'ishadow', 'rn'], zlb: true }
 };
 const HIDDEN = { ch_player: challenge('player'), ch_taylor: challenge('taylor'), ch_discr: challenge('discr'), ch_commit: challenge('commit') };

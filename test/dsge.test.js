@@ -168,5 +168,18 @@ t('SW07: choque contracionista de política (sinais e dinâmica)', () => {
   assert(Math.abs(ir.y[23]) < Math.abs(ir.y[2]), 'o efeito se dissipa');
 });
 
+// ---------- SW07 com parâmetros do SAMBA (calibração parcial, não é o SAMBA) ----------
+t('SW07 com parâmetros do SAMBA: determinado, e o choque de política tem os sinais esperados', () => {
+  const s = sw(M.CALIB.sw07_samba.over); assert(s.determinate, s.message);
+  const ir = D.irf(s, 'e_m', 24, 0.0032); // desvio-padrão do choque monetário no SAMBA: 0,32
+  assert(ir.r[0] > 0 && ir.y[0] < 0 && ir.inv[0] < 0 && ir.c[0] < 0, 'sinais de impacto');
+  assert(ir.pi.slice(0, 8).some(v => v < 0), 'inflação cai'); assert(Math.abs(ir.y[23]) < Math.abs(ir.y[3]), 'o efeito se dissipa');
+});
+t('SW07 com parâmetros do SAMBA: sem rigidez nominal a economia rígida replica a flexível', () => {
+  const s = sw(Object.assign({}, M.CALIB.sw07_samba.over, { xip: 1e-6, xiw: 1e-6 })); assert(s.ok, s.message);
+  const ir = D.irf(s, 'e_a', 20, 0.01);
+  for (const [v, f] of [['y', 'yf'], ['c', 'cf'], ['inv', 'invf']]) for (let k = 0; k < 20; k++) assert(Math.abs(ir[v][k] - ir[f][k]) < 2e-3 * Math.max(peakAbs(ir[f]), 0.005), v + ' k=' + k);
+});
+
 console.log('\n' + n + ' testes ok, ' + fails + ' falhas');
 process.exit(fails ? 1 : 0);

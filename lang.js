@@ -151,6 +151,8 @@ const EN={
 'Calibração: Valores do artigo':'Calibration: paper values','Calibração: Brasil (didática)':'Calibration: Brazil (didactic)',
 'Calibração: Calvo, θ = 0,75 (padrão)':'Calibration: Calvo, θ = 0.75 (default)','Calibração: inclinação do artigo (κ ≈ 0,06)':'Calibration: paper slope (κ ≈ 0.06)',
 'Smets-Wouters (2007) · economia dos EUA, 33 variáveis':'Smets-Wouters (2007) · US economy, 33 variables','Calibração: Smets-Wouters: arquivo original (usmodel)':'Calibration: Smets-Wouters: original file (usmodel)','Calibração: Réplica do Pfeifer (estimated_params)':'Calibration: Pfeifer replication (estimated_params)',
+'Calibração: Estrutura SW07 com parâmetros do SAMBA (parcial)':'Calibration: SW07 structure with SAMBA parameters (partial)',
+'O que do SAMBA (Banco Central do Brasil) está coberto aqui':'What of SAMBA (Central Bank of Brazil) is covered here','Ingrediente do SAMBA':'SAMBA ingredient','Valor no artigo':'Value in the paper','No app':'In the app','Não implementado':'Not implemented',
 'TANK · sem transferências':'TANK · no transfers','TANK · transferências constantes':'TANK · constant transfers','RANK · redistribuição total (sem heterogeneidade)':'RANK · full redistribution (no heterogeneity)',
 'Desafio: ganhe do banco central ótimo':'Challenge: beat the optimal central bank','20 trimestres':'20 quarters','Desvio da regra (p.p.)':'Deviation from the rule (pp)',
 'Avançar um trimestre ▸':'Advance one quarter ▸','Novo desafio':'New challenge','Inflação (p.p.)':'Inflation (pp)','Hiato do produto (p.p.)':'Output gap (pp)','Ótima com compromisso':'Optimal with commitment',
