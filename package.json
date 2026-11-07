@@ -1,7 +1,7 @@
 {
   "name": "simulador-banco-central",
   "productName": "Simulador do Banco Central",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Jogo de política monetária (Brasil e clássico) como app de desktop, sem internet.",
   "main": "app/main.js",
   "private": true,
@@ -17,7 +17,7 @@
     "appId": "br.simulador.bancocentral",
     "productName": "Simulador do Banco Central",
     "directories": { "output": "dist" },
-    "files": ["app/**", "index.html", "lang.js", "platform.js", "config.js", "package.json"],
+    "files": ["app/**", "index.html", "lang.js", "platform.js", "config.js", "dsge.js", "dsge-models.js", "research.js", "package.json"],
     "win": { "target": "portable", "signAndEditExecutable": false },
     "portable": { "artifactName": "Simulador-do-Banco-Central-${version}.exe" }
   }

@@ -13,7 +13,7 @@ const T = {
     view: 'Exibir', lang: 'Idioma', help: 'Ajuda', how: 'Como jogar', about: 'Sobre',
     zin: 'Aumentar zoom', zout: 'Diminuir zoom', z0: 'Zoom padrão', full: 'Tela cheia',
     views: { painel: 'Painel', previsao: 'Previsão', monitores: 'Monitores', mercados: 'Mercados e famílias', governo: 'Governo',
-      compartilhar: 'Compartilhar', historico: 'Conquistas e histórico', ranking: 'Ranking', diario: 'Diário' },
+      compartilhar: 'Compartilhar', pesquisa: 'Pesquisa (DSGE)', historico: 'Conquistas e histórico', ranking: 'Ranking', diario: 'Diário' },
     aboutText: 'Jogo de política monetária (Brasil e clássico), com modelos, cenários, conquistas e ranking. Funciona sem internet.'
   },
   en: {
@@ -22,7 +22,7 @@ const T = {
     view: 'View', lang: 'Language', help: 'Help', how: 'How to play', about: 'About',
     zin: 'Zoom in', zout: 'Zoom out', z0: 'Actual size', full: 'Full screen',
     views: { painel: 'Dashboard', previsao: 'Forecast', monitores: 'Monitors', mercados: 'Markets and households', governo: 'Government',
-      compartilhar: 'Share', historico: 'Achievements and history', ranking: 'Ranking', diario: 'Log' },
+      compartilhar: 'Share', pesquisa: 'Research (DSGE)', historico: 'Achievements and history', ranking: 'Ranking', diario: 'Log' },
     aboutText: 'Monetary policy game (Brazil and classic), with models, scenarios, achievements and a ranking. Works offline.'
   }
 };

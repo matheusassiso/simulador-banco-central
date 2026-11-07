@@ -81,10 +81,33 @@ Nada disso está instalado aqui e nada baixado foi executado. Validação possí
 Para validar contra números oficiais (FRB/US), seria preciso **executar o `pyfrbus` do Fed** (Python, requer pandas, numpy, scipy e uma
 biblioteca simbólica). Isso é executar código baixado e precisa de autorização explícita antes.
 
+## 4b. Status (2026-11-07): itens 1 a 3 feitos e pyfrbus executado
+
+**Motor DSGE próprio** (`dsge.js`, `dsge-models.js`, `research.js`, `test/dsge.test.js`): parser de modelos no estilo Dynare (sem `eval`),
+solver doubling, determinação por ρ(X) e ρ(F), funções de impulso-resposta e momentos teóricos (Lyapunov). 15 testes, todos passando:
+- solução escalar e matricial da equação quadrática, com resíduo ~1e-17;
+- NK de três equações igual à solução analítica de Galí (2015, cap. 3) com erro menor que 1e-10;
+- princípio de Taylor: φπ = 1,5 determinado e φπ = 0,5 indeterminado;
+- desvio-padrão e autocorrelação de um AR(1) iguais às fórmulas fechadas;
+- Galí-Monacelli 2005: determinado nos quatro regimes; sob política ótima a inflação doméstica fica em zero e os termos de troca seguem a
+  tecnologia um a um; no câmbio fixo o câmbio nominal fica em zero.
+Raízes unitárias (câmbio nominal e nível de preços) contam como estáveis, como no Dynare (critério 1 + 1e-5); a tela avisa e não calcula
+momentos nesse caso. No app: painel "Pesquisa", com editor de modelo, parâmetros editáveis, IRFs e comparação dos quatro regimes.
+
+**FRB/US executado.** O `pyfrbus` (domínio público) rodou num ambiente virtual isolado (pandas 2.3, numpy 2.4, scipy, symengine,
+networkx, lxml, multiprocess, matplotlib e `sympy==1.3`, como o pacote exige; com sympy novo o Jacobiano simbólico falha). Cenário do demo
+oficial: +100 pb em `rffintay_aerr` em 2040Q1, meta de superávit. Resultado salvo em `docs/ref/frbus-choque-100pb.json` (base, choque e desvio de
+10 variáveis em 24 trimestres), gerado por `tools/pyfrbus_reference.py`:
+- juro (`rff`): +1,00 no 1º trimestre, depois 0,83, 0,66 e 0,50;
+- desemprego (`lur`): sobe até cerca de +0,26 p.p. por volta do 8º trimestre;
+- inflação básica (`picxfe`): cai até cerca de −0,03 p.p.
+O comportamento é o esperado (juro maior, desemprego maior, inflação menor). Isso é referência para uma futura versão em JavaScript do FRB/US:
+o portador terá de reproduzir esses números.
+
 ## 5. Próximos passos propostos
 
-1. Mini-parser + solver doubling + testes de propriedades.
-2. Galí-Monacelli 2005 (Brasil) com painel de IRFs e regimes.
-3. Galí 2015 cap. 5 (política ótima).
+1. ~~Mini-parser + solver doubling + testes de propriedades.~~ Feito.
+2. ~~Galí-Monacelli 2005 com painel de IRFs e regimes.~~ Feito (calibração do artigo; calibração do Brasil ainda pendente).
+3. Galí 2015 cap. 5 (política ótima sob compromisso e discrição, função de perda).
 4. Camada TANK e depois estrutura SAMBA-like com os parâmetros dos artigos.
-5. Decidir sobre executar o `pyfrbus` para uma versão do FRB/US.
+5. FRB/US em JavaScript, validado contra `docs/ref/frbus-choque-100pb.json`.
