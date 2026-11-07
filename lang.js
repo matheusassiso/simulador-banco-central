@@ -149,6 +149,8 @@ const EN={
 'Choque de custos · regra de Taylor':'Cost-push shock · Taylor rule','Choque de custos · política ótima sem compromisso':'Cost-push shock · optimal policy without commitment','Choque de custos · política ótima com compromisso':'Cost-push shock · optimal policy with commitment',
 'Limite zero do juro (piso em 0%)':'Zero lower bound on the rate (floor at 0%)','Com piso do juro em 0%':'With rate floor at 0%','Sem piso (linear)':'No floor (linear)',
 'Calibração: Valores do artigo':'Calibration: paper values','Calibração: Brasil (didática)':'Calibration: Brazil (didactic)',
+'Calibração: Calvo, θ = 0,75 (padrão)':'Calibration: Calvo, θ = 0.75 (default)','Calibração: inclinação do artigo (κ ≈ 0,06)':'Calibration: paper slope (κ ≈ 0.06)',
+'TANK · sem transferências':'TANK · no transfers','TANK · transferências constantes':'TANK · constant transfers','RANK · redistribuição total (sem heterogeneidade)':'RANK · full redistribution (no heterogeneity)',
 'Desafio: ganhe do banco central ótimo':'Challenge: beat the optimal central bank','20 trimestres':'20 quarters','Desvio da regra (p.p.)':'Deviation from the rule (pp)',
 'Avançar um trimestre ▸':'Advance one quarter ▸','Novo desafio':'New challenge','Inflação (p.p.)':'Inflation (pp)','Hiato do produto (p.p.)':'Output gap (pp)','Ótima com compromisso':'Optimal with commitment',
 'Perda acumulada (× 10⁴)':'Cumulative loss (× 10⁴)','Ótima sem compromisso':'Optimal without commitment',

@@ -121,29 +121,75 @@ shocks; std eu = 0.004; std en = 0.003; std ev = 0.005; end;
 `;
 }
 
+// TANK (dois agentes): forma reduzida de Debortoli e Galí (2018), seção 3.4. Uma fração lambda das famílias é "keynesiana" (consome a renda).
+// A curva de Phillips é igual à do RANK; a IS fica x = E x' − (i − E π' − rn)/[σ(1+χy)] e a taxa natural ganha o fator (1+χn).
+// tau0 e taud definem as transferências fiscais: (0,0) sem transferências; (1,0) transferências constantes; (1,1) redistribuição total (= RANK).
+const TANK_POLICY = {
+  notr:  { title: 'TANK sem transferências',          tau0: 0, taud: 0 },
+  const: { title: 'TANK com transferências constantes', tau0: 1, taud: 0 },
+  rank:  { title: 'RANK (redistribuição total)',       tau0: 1, taud: 1 }
+};
+function tank(p) {
+  return `
+// TANK (Debortoli e Galí): ${TANK_POLICY[p].title}. Variáveis em desvios do estado estacionário.
+var x pi i rn z a ynat nu h;
+// x hiato, pi inflação, i juro, rn juro natural, z preferência, a tecnologia, ynat produto natural, nu choque de política, h índice de heterogeneidade
+varexo ez ea en;
+parameters beta sigma phi alpha eps theta lambda tau0 taud phipi phix rhoz rhoa rhonu;
+beta = 0.9925; sigma = 1; phi = 1; alpha = 0.25; eps = 9; theta = 0.75; lambda = 0.21;
+tau0 = ${TANK_POLICY[p].tau0}; taud = ${TANK_POLICY[p].taud}; phipi = 1.5; phix = 0.125; rhoz = 0.5; rhoa = 0.9; rhonu = 0.5;
+model;
+  #Mp   = eps / (eps - 1);
+  #H    = 1 + lambda * (1 - tau0) / (1 - lambda) * (1 - (1 - alpha) / Mp);
+  #psia = (1 + phi) / (sigma * (1 - alpha) + alpha + phi);
+  #chiy = lambda / ((1 - lambda) * H) * ((tau0 - taud) * (1 - (1 - alpha) / Mp) - (1 - taud) * (1 - alpha) / Mp * (sigma + (alpha + phi) / (1 - alpha)));
+  #chin = lambda * (tau0 - taud) / ((1 - lambda) * H) * (1 - (1 - alpha) / Mp);
+  #kap  = (1 - theta) * (1 - beta * theta) / theta * (sigma + (alpha + phi) / (1 - alpha));
+
+  x    = x(+1) - (i - pi(+1) - rn) / (sigma * (1 + chiy));        // IS dinâmica do TANK
+  pi   = beta * pi(+1) + kap * x;                                 // Phillips (igual ao RANK)
+  rn   = (1 - rhoz) * z + sigma * (1 + chin) * psia * (a(+1) - a);
+  ynat = psia * a;
+  h    = chiy * x + chin * ynat;                                  // desigualdade de consumo
+  i    = phipi * pi + phix * x + nu;                              // regra de Taylor
+  z    = rhoz * z(-1) + ez;
+  a    = rhoa * a(-1) + ea;
+  nu   = rhonu * nu(-1) + en;
+end;
+shocks; std ez = 0.01; std ea = 0.01; std en = 0.0025; end;
+`;
+}
+
 // Calibrações. "paper" usa os valores dos artigos. "brasil" é DIDÁTICA: ordens de grandeza, não estimativa (ver nota na tela).
 const CALIB = {
   paper:  { name: 'Valores do artigo', over: {}, note: '' },
+  tank_default: { name: 'Calvo, θ = 0,75 (padrão)', over: {}, note: 'A curva de Phillips usa preços de Calvo com θ = 0,75 (κ ≈ 0,23). A heterogeneidade não altera a oferta neste modelo; só a curva IS muda.' },
+  dg: { name: 'inclinação do artigo (κ ≈ 0,06)', over: { theta: 0.8655 }, note: 'θ = 0,8655 reproduz κ ≈ 0,06, perto da inclinação da calibração de Debortoli e Galí (custo de ajuste ξ = 372,8, ε = 9). Os demais parâmetros seguem o artigo (β = 0,9925, σ = 1, φ = 1, 1−α = 3/4, λ = 0,21); ρ de a, z e do choque de política são didáticos.' },
   brasil: { name: 'Brasil (didática)', over: { alpha: 0.14, theta: 0.8, beta: 0.989, phi: 2, rhoa: 0.9, phipi: 1.5 },
     note: 'Didática, não estimada: α = 0,14 (importações ≈ 14% do PIB, ordem de grandeza), θ = 0,80 (preços mudam a cada ~5 trimestres), β = 0,989 (juro real de equilíbrio ≈ 4,5% ao ano), φ = 2, ρa = 0,9 e φπ = 1,5. Para a calibração estimada do Banco Central, ver o SAMBA (WP 239).' }
 };
 
 const GM_GROUP = ['gm_optimal', 'gm_ditr', 'gm_citr', 'gm_peg'];
 const CP_GROUP = ['cp_taylor', 'cp_discr', 'cp_commit'];
+const TANK_GROUP = ['tank_notr', 'tank_const', 'tank_rank'];
+const TANK_CAL = ['tank_default', 'dg'], GM_CAL = ['paper', 'brasil'];
 const GM_SHOW = ['pih', 'x', 's', 'e', 'r'];
 const MODELS = {
   nk3: { name: 'Novo-Keynesiano de 3 equações', text: NK3, shocks: ['ev', 'eu'], show: ['x', 'pi', 'i'] },
   cp_taylor: { name: 'Choque de custos · regra de Taylor', text: cp('taylor'), show: ['pi', 'x', 'i'], group: CP_GROUP, loss: { pi: 1, x: 'alpha' } },
   cp_discr: { name: 'Choque de custos · política ótima sem compromisso', text: cp('discr'), show: ['pi', 'x', 'i'], group: CP_GROUP, loss: { pi: 1, x: 'alpha' } },
   cp_commit: { name: 'Choque de custos · política ótima com compromisso', text: cp('commit'), show: ['pi', 'x', 'i'], group: CP_GROUP, loss: { pi: 1, x: 'alpha' } },
-  gm_optimal: { name: 'Pequena economia aberta · política ótima', text: gm('optimal'), show: GM_SHOW, group: GM_GROUP, calib: true },
-  gm_ditr: { name: 'Pequena economia aberta · Taylor (inflação doméstica)', text: gm('ditr'), show: GM_SHOW, group: GM_GROUP, calib: true },
-  gm_citr: { name: 'Pequena economia aberta · Taylor (IPC)', text: gm('citr'), show: GM_SHOW, group: GM_GROUP, calib: true },
-  gm_peg: { name: 'Pequena economia aberta · câmbio fixo', text: gm('peg'), show: GM_SHOW, group: GM_GROUP, calib: true },
+  gm_optimal: { name: 'Pequena economia aberta · política ótima', text: gm('optimal'), show: GM_SHOW, group: GM_GROUP, calib: GM_CAL },
+  gm_ditr: { name: 'Pequena economia aberta · Taylor (inflação doméstica)', text: gm('ditr'), show: GM_SHOW, group: GM_GROUP, calib: GM_CAL },
+  gm_citr: { name: 'Pequena economia aberta · Taylor (IPC)', text: gm('citr'), show: GM_SHOW, group: GM_GROUP, calib: GM_CAL },
+  gm_peg: { name: 'Pequena economia aberta · câmbio fixo', text: gm('peg'), show: GM_SHOW, group: GM_GROUP, calib: GM_CAL },
+  tank_notr: { name: 'TANK · sem transferências', text: tank('notr'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
+  tank_const: { name: 'TANK · transferências constantes', text: tank('const'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
+  tank_rank: { name: 'RANK · redistribuição total (sem heterogeneidade)', text: tank('rank'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
   nk_zlb: { name: 'Limite zero do juro (piso em 0%)', text: zlb(false), floorText: zlb(true), show: ['x', 'pi', 'i', 'ishadow', 'rn'], zlb: true }
 };
 const HIDDEN = { ch_player: challenge('player'), ch_taylor: challenge('taylor'), ch_discr: challenge('discr'), ch_commit: challenge('commit') };
 
-const out = { MODELS, HIDDEN, CALIB, GM_POLICY, CP_POLICY, gm, cp, zlb, challenge };
+const out = { MODELS, HIDDEN, CALIB, GM_POLICY, CP_POLICY, TANK_POLICY, gm, cp, zlb, tank, challenge };
 if (typeof module !== 'undefined' && module.exports) module.exports = out; else root.DSGE_MODELS = out;
 })(typeof window !== 'undefined' ? window : globalThis);

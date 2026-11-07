@@ -120,9 +120,20 @@ Feito, com 20 testes passando (`node test/dsge.test.js`):
 - **Dados reais do BCB** (API SGS, com CORS aberto): Selic meta (432), IPCA 12m (13522) e IBC-Br dessazonalizado (24364) dos últimos 10 anos,
   com regra de Taylor didática (juro de equilíbrio 4,5%, hiato por filtro HP, metas do CMN).
 
+**TANK (feito).** Baixei e li o rascunho de 2018 de Debortoli e Galí ("Monetary policy with heterogeneous agents: insights from TANK models",
+CREI), seção 3.4, e implementei a forma reduzida: curva de Phillips igual à do RANK e curva IS
+`x = E x' − (i − E π' − rn)/[σ(1+χy)]`, com `rn = (1−ρz)z + σ(1+χn)·ψa·E(Δa')` e χy, χn, H dados pelo artigo em função de λ, τ0, τd. Três
+regimes fiscais: sem transferências (τ0=τd=0), transferências constantes (1,0) e redistribuição total (1,1 = RANK). Validação (25 testes):
+- com redistribuição total χy = χn = 0 e a solução coincide com λ = 0 e com a fórmula analítica do NK;
+- sem transferências χy < 0 e χn = 0; com transferências constantes χy < 0 e χn > 0 (como o artigo afirma);
+- a condição de sinal do artigo, χy > 0 ⇔ (τ0−τd)/(1−τd) > (σ(1−α)+φ+α)/(Mp−1+α), vale em 200 sorteios (100 de cada sinal);
+- o choque de juros é amplificado em relação ao RANK. Com a inclinação do artigo (κ ≈ 0,06), o pico do hiato é 0,48% sem transferências contra
+  0,34% no RANK (razão 1,41); com Calvo θ = 0,75 (κ ≈ 0,23) a razão cai para 1,25. O pico cresce com λ (0,29% para 0,42% de λ = 0,21 para 0,40).
+Limite: os números exatos da Figura 1 do artigo não foram extraídos, então a conferência é qualitativa e por fórmulas, não ponto a ponto.
+O artigo calibra a curva de Phillips por custo de ajuste de Rotemberg (ξ = 372,8, ε = 9); aqui há duas opções: Calvo com θ = 0,75 (padrão) ou
+θ = 0,8655, que dá κ ≈ 0,06.
+
 Pendente, com o motivo:
-- **Dois agentes (TANK):** é só uma curva IS modificada, mas as equações agregadas dependem de hipóteses (ciclicalidade da renda dos agentes
-  restritos, redistribuição) que não vou escrever de memória. Precisa ler Bilbiie (2008) ou Debortoli e Galí (2017) antes.
 - **Smets-Wouters 2007:** cerca de 40 equações; sem Dynare instalado não há como validar a transcrição além de determinação e plausibilidade.
 - **SAMBA (WP 239) e FRB/US em JavaScript:** os trabalhos mais longos; seguem como estavam.
 

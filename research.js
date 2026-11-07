@@ -37,7 +37,10 @@ function lineChart(cv, series, T, ticks) {
 const sel = $('dsgeModel');
 Object.keys(MODELS).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = MODELS[k].name; sel.appendChild(o); });
 const oc = document.createElement('option'); oc.value = 'custom'; oc.textContent = 'Personalizado (edite o texto)'; sel.appendChild(oc);
-Object.keys(CALIB).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = 'Calibração: ' + CALIB[k].name; $('dsgeCalib').appendChild(o); });
+function fillCalib(keys) { // lista de calibrações própria de cada modelo
+  const sc = $('dsgeCalib'); if (sc.dataset.keys === keys.join()) return;
+  sc.innerHTML = keys.map(k => '<option value="' + k + '">Calibração: ' + esc(CALIB[k].name) + '</option>').join(''); sc.dataset.keys = keys.join();
+}
 
 function msg(t, ok) { const m = $('dsgeMsg'); m.textContent = t; m.className = 'hint ' + (ok ? 'good' : 'bad'); }
 function paramsUI(m, nm) {
@@ -55,7 +58,7 @@ function run(rebuild) {
   let m; try { m = D.parse($('dsgeText').value); } catch (e) { msg('Modelo inválido: ' + e.message, false); return; }
   const meta = curKey !== 'custom' ? MODELS[curKey] : null, cal = !!(meta && meta.calib);
   $('dsgeCalib').hidden = !cal; $('dsgeCalibNote').hidden = !cal;
-  const cOver = {}; if (cal) { const c = CALIB[$('dsgeCalib').value] || CALIB.paper; Object.keys(c.over).forEach(k => { if (m.params.indexOf(k) >= 0) cOver[k] = c.over[k]; }); $('dsgeCalibNote').textContent = c.note; }
+  const cOver = {}; if (cal) { fillCalib(meta.calib); const c = CALIB[$('dsgeCalib').value] || CALIB[meta.calib[0]]; Object.keys(c.over).forEach(k => { if (m.params.indexOf(k) >= 0) cOver[k] = c.over[k]; }); $('dsgeCalibNote').textContent = c.note; }
   const eff = Object.assign({}, cOver, over);
   let sol; try { sol = D.solve(m, eff); } catch (e) { msg('Erro: ' + e.message, false); return; }
   if (rebuild) paramsUI(m, sol.lin ? sol.lin.names : {});

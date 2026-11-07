@@ -78,3 +78,10 @@ Painel "Pesquisa" (site e app): resolve modelos DSGE lineares com expectativas r
 ### Atualizacao do Modo Pesquisa
 
 Alem do solver e dos regimes do Gali-Monacelli: politica otima sem e com compromisso (Gali 2015, cap. 5) com perda de bem-estar, limite zero do juro (estilo OccBin), calibracao didatica do Brasil, um desafio (voce contra a politica otima) e dados reais do BCB (Selic, IPCA, IBC-Br) com regra de Taylor didatica. Testes: `node test/dsge.test.js` (20).
+[INFO] Recording command outcome: printf
+
+[OK] Command outcome recorded
+
+### TANK
+
+Modelo de dois agentes (Debortoli e Gali, 2018): `tank_notr`, `tank_const` e `tank_rank` no painel Pesquisa, com comparacao dos tres regimes fiscais, lambda editavel e duas calibracoes da curva de Phillips. Testes: `node test/dsge.test.js` (25).
