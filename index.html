@@ -578,6 +578,21 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
     </div>
     <label class="check" style="margin-bottom:8px"><input type="checkbox" id="dsgeCmp"><span><b>Comparar regimes de política</b> (disponível nos modelos com variantes de política)</span></label>
     <div id="dsgeCalibNote" class="hint" hidden></div>
+    <details class="card" id="sambaMap" style="margin:10px 0">
+      <summary>O que do SAMBA (Banco Central do Brasil) está coberto aqui</summary>
+      <p class="hint">Fonte: Castro, Gouvea, Minella, Santos e Souza-Sobrinho (2015), Brazilian Review of Econometrics. Não há código oficial publicado, então nada aqui é uma reprodução: são partes do modelo, com os parâmetros dele quando há correspondência direta.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Ingrediente do SAMBA</th><th>Valor no artigo</th><th>No app</th></tr></thead>
+        <tbody>
+          <tr><td style="white-space:normal">Hábito, rigidez de preços e salários, custo de ajuste do investimento</td><td style="white-space:normal">hábito 0,74 · Calvo preços 0,74 · Calvo salários 0,75 · ajuste 3,42</td><td style="white-space:normal">Smets-Wouters com a calibração "parâmetros do SAMBA (parcial)"</td></tr>
+          <tr><td style="white-space:normal">Regra de Taylor com suavização</td><td style="white-space:normal">suavização 0,79 · inflação 2,43 · hiato 0,16</td><td style="white-space:normal">Smets-Wouters, mesma calibração</td></tr>
+          <tr><td style="white-space:normal">Famílias rule-of-thumb</td><td style="white-space:normal">40% do consumo</td><td style="white-space:normal">Modelo TANK (λ é fração da população, não do consumo: não foi convertido)</td></tr>
+          <tr><td style="white-space:normal">Pequena economia aberta, câmbio, termos de troca</td><td style="white-space:normal">importações 12% do PIB · exportações 13%</td><td style="white-space:normal">Galí-Monacelli 2005 (versão enxuta, sem pass-through parcial)</td></tr>
+          <tr><td style="white-space:normal">Importações como insumo em quatro setores, financiamento externo</td><td style="white-space:normal">peso do insumo doméstico 0,79 a 1,00 · 50% financiado fora</td><td style="white-space:normal">Não implementado</td></tr>
+          <tr><td style="white-space:normal">Regra fiscal (superávit primário) e preços administrados</td><td style="white-space:normal">reação 0,49 · administrados 30% do IPC</td><td style="white-space:normal">Não implementado</td></tr>
+          <tr><td style="white-space:normal">Estimação bayesiana (28 choques)</td><td style="white-space:normal">posterioris da Tabela 3</td><td style="white-space:normal">Não reestimado: só os valores publicados</td></tr>
+        </tbody></table></div>
+    </details>
     <div id="dsgeMsg" class="hint">—</div>
     <div class="share" style="margin-top:12px">
       <div class="card"><h3><span>Modelo (texto)</span></h3><textarea id="dsgeText" spellcheck="false" style="min-height:300px;font-size:.76rem;margin-top:8px"></textarea></div>

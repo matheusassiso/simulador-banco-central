@@ -20,9 +20,6 @@ Seção "Ranking" no fim da página. Sem configuração, o ranking fica só no n
 3. Preencha `url` e `anonKey` em `config.js` (a anon key é pública; a segurança vem das regras RLS).
 
 O ranking reexecuta o registro de decisões de cada partida e mostra a pontuação verificada, não a declarada.
-[INFO] Recording command outcome: printf
-
-[OK] Command outcome recorded
 
 ## Modelos e opções (v2.0)
 
@@ -71,16 +68,10 @@ Painel "Pesquisa" (site e app): resolve modelos DSGE lineares com expectativas r
 - Testes: `node test/dsge.test.js` (15 testes por propriedades analiticas).
 - Referencia do FRB/US (Federal Reserve, dominio publico): `docs/ref/frbus-choque-100pb.json`, gerada por `tools/pyfrbus_reference.py`.
 - Estudo das referencias abertas e plano: `docs/estudo-referencias.md`.
-[INFO] Recording command outcome: printf
-
-[OK] Command outcome recorded
 
 ### Atualizacao do Modo Pesquisa
 
 Alem do solver e dos regimes do Gali-Monacelli: politica otima sem e com compromisso (Gali 2015, cap. 5) com perda de bem-estar, limite zero do juro (estilo OccBin), calibracao didatica do Brasil, um desafio (voce contra a politica otima) e dados reais do BCB (Selic, IPCA, IBC-Br) com regra de Taylor didatica. Testes: `node test/dsge.test.js` (20).
-[INFO] Recording command outcome: printf
-
-[OK] Command outcome recorded
 
 ### TANK
 

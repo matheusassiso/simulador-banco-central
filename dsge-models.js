@@ -160,11 +160,99 @@ shocks; std ez = 0.01; std ea = 0.01; std en = 0.0025; end;
 `;
 }
 
+// Smets e Wouters (2007, AER), versão log-linear. Duas economias: a de preços e salários rígidos (variáveis sem sufixo) e a flexível
+// (sufixo f), que define o hiato do produto na regra de juros. 33 variáveis, 7 choques. Variáveis em desvios (decimais); as unidades dos
+// desvios-padrão são as do artigo divididas por 100. Parâmetros: valores do bloco estimated_params da réplica do Pfeifer (modo do artigo).
+const SW07 = `
+// Smets e Wouters (2007). Variáveis: y produto, c consumo, inv investimento, kp capital instalado, k serviços de capital, zcap utilização,
+// rk retorno do capital, pk valor do capital (Tobin), w salário real, lab horas, pi inflação, r juro, mc custo marginal.
+// Choques: a produtividade, b prêmio de risco, gov gastos, qi investimento, mp política, mup markup de preços, muw markup de salários.
+var y c inv kp k zcap rk pk w lab pi r mc a b gov qi mp mup muw epma ewa
+    yf cf invf kpf kf zcf rkf pkf wf labf rrf;
+varexo e_a e_b e_g e_q e_m e_p e_w;
+parameters alpha delta lamw gshare curvp curvw fc adj habit sigma sigl xiw xip iotaw iotap psi rpi rhoi ry rdy
+    rho_a rho_b rho_g rho_q rho_m rho_p rho_w theta_p theta_w gy_a trend constebeta
+    sd_a sd_b sd_g sd_q sd_m sd_p sd_w;
+alpha = 0.24; delta = 0.025; lamw = 1.5; gshare = 0.18; curvp = 10; curvw = 10; fc = 1.5;
+adj = 6.0144; habit = 0.6361; sigma = 1.5; sigl = 1.9423; xiw = 0.8087; xip = 0.6; iotaw = 0.3243; iotap = 0.47; psi = 0.2696;
+rpi = 1.488; rhoi = 0.8762; ry = 0.0593; rdy = 0.2347;
+rho_a = 0.9977; rho_b = 0.5799; rho_g = 0.9957; rho_q = 0.7165; rho_m = 0; rho_p = 0; rho_w = 0; theta_p = 0; theta_w = 0;
+gy_a = 0.51; trend = 0.3982; constebeta = 0.742;
+sd_a = 0.004618; sd_b = 0.018513; sd_g = 0.00609; sd_q = 0.006017; sd_m = 0.002397; sd_p = 0.001455; sd_w = 0.002089;
+model;
+  // relações do estado estacionário
+  #gam    = 1 + trend/100;
+  #beta   = 1/(1 + constebeta/100);
+  #betabar = beta * gam^(-sigma);
+  #rkss   = beta^(-1) * gam^sigma - (1 - delta);
+  #wss    = (alpha^alpha * (1-alpha)^(1-alpha) / (fc * rkss^alpha))^(1/(1-alpha));
+  #ikbar  = 1 - (1-delta)/gam;
+  #ik     = ikbar * gam;
+  #lk     = ((1-alpha)/alpha) * (rkss/wss);
+  #ky     = fc * lk^(alpha-1);
+  #iy     = ik * ky;
+  #cy     = 1 - gshare - ik*ky;
+  #rkky   = rkss * ky;
+  #whlc   = (1/lamw) * (1-alpha)/alpha * rkss*ky/cy;
+  #hh     = habit/gam;
+  #bg     = betabar*gam;
+
+  // ---- economia flexível ----
+  a    = alpha*rkf + (1-alpha)*wf;
+  zcf  = ((1-psi)/psi) * rkf;
+  rkf  = wf + labf - kf;
+  kf   = kpf(-1) + zcf;
+  invf = (1/(1+bg)) * (invf(-1) + bg*invf(+1) + (1/(gam^2*adj))*pkf) + qi;
+  pkf  = -rrf + (sigma*(1+hh)/(1-hh))*b + (rkss/(rkss+1-delta))*rkf(+1) + ((1-delta)/(rkss+1-delta))*pkf(+1);
+  cf   = hh/(1+hh)*cf(-1) + 1/(1+hh)*cf(+1) + ((sigma-1)*whlc/(sigma*(1+hh)))*(labf - labf(+1)) - (1-hh)/(sigma*(1+hh))*rrf + b;
+  yf   = cy*cf + iy*invf + gov + rkky*zcf;
+  yf   = fc*(alpha*kf + (1-alpha)*labf + a);
+  wf   = sigl*labf + (1/(1-hh))*cf - (hh/(1-hh))*cf(-1);
+  kpf  = (1-ikbar)*kpf(-1) + ikbar*invf + ikbar*gam^2*adj*qi;
+
+  // ---- economia com preços e salários rígidos ----
+  mc   = alpha*rk + (1-alpha)*w - a;
+  zcap = ((1-psi)/psi) * rk;
+  rk   = w + lab - k;
+  k    = kp(-1) + zcap;
+  inv  = (1/(1+bg)) * (inv(-1) + bg*inv(+1) + (1/(gam^2*adj))*pk) + qi;
+  pk   = -r + pi(+1) + (sigma*(1+hh)/(1-hh))*b + (rkss/(rkss+1-delta))*rk(+1) + ((1-delta)/(rkss+1-delta))*pk(+1);
+  c    = hh/(1+hh)*c(-1) + 1/(1+hh)*c(+1) + ((sigma-1)*whlc/(sigma*(1+hh)))*(lab - lab(+1)) - (1-hh)/(sigma*(1+hh))*(r - pi(+1)) + b;
+  y    = cy*c + iy*inv + gov + rkky*zcap;
+  y    = fc*(alpha*k + (1-alpha)*lab + a);
+  pi   = (1/(1+bg*iotap)) * (bg*pi(+1) + iotap*pi(-1) + ((1-xip)*(1-bg*xip)/xip)/((fc-1)*curvp+1)*mc) + mup;
+  w    = (1/(1+bg))*w(-1) + (bg/(1+bg))*w(+1) + (iotaw/(1+bg))*pi(-1) - ((1+bg*iotaw)/(1+bg))*pi + (bg/(1+bg))*pi(+1)
+         + ((1-xiw)*(1-bg*xiw)/((1+bg)*xiw)) * (1/((lamw-1)*curvw+1)) * (sigl*lab + (1/(1-hh))*c - (hh/(1-hh))*c(-1) - w) + muw;
+  r    = rpi*(1-rhoi)*pi + ry*(1-rhoi)*(y-yf) + rdy*(y-yf-y(-1)+yf(-1)) + rhoi*r(-1) + mp;
+  kp   = (1-ikbar)*kp(-1) + ikbar*inv + ikbar*gam^2*adj*qi;
+
+  // ---- choques ----
+  a    = rho_a*a(-1) + e_a;
+  b    = rho_b*b(-1) + e_b;
+  gov  = rho_g*gov(-1) + e_g + gy_a*e_a;
+  qi   = rho_q*qi(-1) + e_q;
+  mp   = rho_m*mp(-1) + e_m;
+  mup  = rho_p*mup(-1) + epma - theta_p*epma(-1);
+  epma = e_p;
+  muw  = rho_w*muw(-1) + ewa - theta_w*ewa(-1);
+  ewa  = e_w;
+end;
+shocks; std e_a = sd_a; std e_b = sd_b; std e_g = sd_g; std e_q = sd_q; std e_m = sd_m; std e_p = sd_p; std e_w = sd_w; end;
+`;
+
 // Calibrações. "paper" usa os valores dos artigos. "brasil" é DIDÁTICA: ordens de grandeza, não estimativa (ver nota na tela).
 const CALIB = {
   paper:  { name: 'Valores do artigo', over: {}, note: '' },
   tank_default: { name: 'Calvo, θ = 0,75 (padrão)', over: {}, note: 'A curva de Phillips usa preços de Calvo com θ = 0,75 (κ ≈ 0,23). A heterogeneidade não altera a oferta neste modelo; só a curva IS muda.' },
   dg: { name: 'inclinação do artigo (κ ≈ 0,06)', over: { theta: 0.8655 }, note: 'θ = 0,8655 reproduz κ ≈ 0,06, perto da inclinação da calibração de Debortoli e Galí (custo de ajuste ξ = 372,8, ε = 9). Os demais parâmetros seguem o artigo (β = 0,9925, σ = 1, φ = 1, 1−α = 3/4, λ = 0,21); ρ de a, z e do choque de política são didáticos.' },
+  sw07_orig: { name: 'Smets-Wouters: arquivo original (usmodel)', over: {}, note: 'Parâmetros e desvios-padrão do arquivo de replicação original de Smets e Wouters (2007), conferidos em duas implementações independentes (Pfeifer e MacroModelling.jl). Variáveis em decimais; os desvios-padrão são os do artigo divididos por 100.' },
+  sw07_rep: { name: 'Réplica do Pfeifer (estimated_params)', over: { sigma: 1.2312, fc: 1.4672, gy_a: 0.05, adj: 6.3325, habit: 0.7205, xiw: 0.7937, sigl: 2.8401, xip: 0.7813, iotaw: 0.4425, iotap: 0.3291, psi: 0.2648,
+    rpi: 1.7985, rhoi: 0.8258, ry: 0.0893, rdy: 0.2239, rho_a: 0.9676, rho_b: 0.2703, rho_g: 0.993, rho_q: 0.5724, rho_m: 0.3, rho_p: 0.8692, rho_w: 0.9546, theta_p: 0.7652, theta_w: 0.8936,
+    sd_b: 0.001818513, sd_q: 0.0046017 },
+    note: 'Valores iniciais do bloco estimated_params do arquivo de réplica do Pfeifer (uma reestimação com ruído de MA nos markups). Não são necessariamente os do artigo.' },
+  sw07_samba: { name: 'Estrutura SW07 com parâmetros do SAMBA (parcial)',
+    over: { habit: 0.74, sigma: 1.3, adj: 3.42, xip: 0.74, iotap: 0.33, xiw: 0.75, iotaw: 0.49, rhoi: 0.79, rpi: 2.43, ry: 0.16, rdy: 0, sigl: 1, alpha: 0.448, delta: 0.015, trend: 0.9, gshare: 0.2, fc: 1.1, lamw: 1.5, curvp: 0, curvw: 0 },
+    note: 'NÃO é o SAMBA. É a estrutura fechada do SW07 com os parâmetros estimados ou calibrados do SAMBA onde há correspondência direta (Tabelas 2 e 3 de Castro et al., 2015): hábito 0,74, σ = 1,30, custo de ajuste do investimento 3,42, Calvo de preços 0,74 e de salários 0,75, indexações 0,33 e 0,49, suavização do juro 0,79, resposta à inflação 2,43 e ao hiato 0,16, η = 1, α = 0,448, δ = 0,015, crescimento 0,9% ao trimestre, gastos 20% do PIB, markups de 10% (preços) e 50% (salários), sem curvatura de Kimball. Faltam: economia aberta e câmbio, importações como insumo, famílias rule-of-thumb, regra fiscal e preços administrados. Os choques seguem os do SW07.' },
   brasil: { name: 'Brasil (didática)', over: { alpha: 0.14, theta: 0.8, beta: 0.989, phi: 2, rhoa: 0.9, phipi: 1.5 },
     note: 'Didática, não estimada: α = 0,14 (importações ≈ 14% do PIB, ordem de grandeza), θ = 0,80 (preços mudam a cada ~5 trimestres), β = 0,989 (juro real de equilíbrio ≈ 4,5% ao ano), φ = 2, ρa = 0,9 e φπ = 1,5. Para a calibração estimada do Banco Central, ver o SAMBA (WP 239).' }
 };
@@ -186,6 +274,7 @@ const MODELS = {
   tank_notr: { name: 'TANK · sem transferências', text: tank('notr'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
   tank_const: { name: 'TANK · transferências constantes', text: tank('const'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
   tank_rank: { name: 'RANK · redistribuição total (sem heterogeneidade)', text: tank('rank'), show: ['x', 'pi', 'i', 'h'], group: TANK_GROUP, calib: TANK_CAL },
+  sw07: { name: 'Smets-Wouters (2007) · economia dos EUA, 33 variáveis', text: SW07, show: ['y', 'c', 'inv', 'pi', 'r', 'w'], calib: ['sw07_orig', 'sw07_rep', 'sw07_samba'] },
   nk_zlb: { name: 'Limite zero do juro (piso em 0%)', text: zlb(false), floorText: zlb(true), show: ['x', 'pi', 'i', 'ishadow', 'rn'], zlb: true }
 };
 const HIDDEN = { ch_player: challenge('player'), ch_taylor: challenge('taylor'), ch_discr: challenge('discr'), ch_commit: challenge('commit') };

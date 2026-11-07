@@ -135,5 +135,51 @@ t('TANK: o choque de política é amplificado sem transferências e com transfer
   assert(n > r, 'sem transf. ' + n + ' deveria superar RANK ' + r); assert(c > r, 'constantes ' + c + ' deveria superar RANK ' + r);
 });
 
+// ---------- Smets-Wouters (2007) ----------
+const sw = (over) => D.solve(D.parse(M.MODELS.sw07.text), over || {});
+t('SW07: 33 variáveis, 7 choques, solução determinada', () => { const s = sw(); assert(s.vars.length === 33 && s.exo.length === 7); assert(s.determinate, s.message); });
+t('SW07: o doubling coincide com um solver independente (iteração de tempo linear)', () => {
+  const L = D.linearize(D.parse(M.MODELS.sw07.text)), la = D._la, nn = L.n;
+  let X = la.zeros(nn, nn), diff = 1;
+  for (let it = 0; it < 40000 && diff > 1e-13; it++) {
+    const Fm = la.lu(la.add(la.mul(L.A, X), L.B)); assert(Fm, 'A·X+B singular na iteração ' + it);
+    const Xn = la.luSolve(Fm, L.C).map(r => r.map(v => -v)); diff = la.fro(la.add(Xn, X, -1)); X = Xn;
+  }
+  const s = sw(); let maxd = 0; for (let i = 0; i < nn; i++) for (let j = 0; j < nn; j++) maxd = Math.max(maxd, Math.abs(X[i][j] - s.X[i][j]));
+  assert(maxd < 1e-7, 'diferença máxima entre os solvers ' + maxd + ' (convergência da iteração: ' + diff + ')');
+});
+t('SW07: sem rigidez nominal (ξp, ξw = 1e-6) a economia rígida replica a flexível, para choques reais', () => {
+  const s = sw({ xip: 1e-6, xiw: 1e-6 });
+  assert(s.ok, s.message);
+  for (const shock of ['e_a', 'e_b', 'e_g', 'e_q']) {
+    const ir = D.irf(s, shock, 20, 0.01);
+    for (const [v, f] of [['y', 'yf'], ['c', 'cf'], ['inv', 'invf'], ['lab', 'labf'], ['w', 'wf']]) {
+      const scale = Math.max(peakAbs(ir[f]), 0.005); // piso: o choque tem 0,01
+      for (let k = 0; k < 20; k++) assert(Math.abs(ir[v][k] - ir[f][k]) < 2e-3 * scale, shock + ': ' + v + ' vs ' + f + ' em k=' + k + ' (' + ir[v][k] + ' vs ' + ir[f][k] + ')');
+    }
+  }
+});
+t('SW07: choque contracionista de política (sinais e dinâmica)', () => {
+  const ir = D.irf(sw(), 'e_m', 24, 0.002397);
+  assert(ir.r[0] > 0, 'juro sobe no impacto'); assert(ir.y[0] < 0 && ir.inv[0] < 0 && ir.c[0] < 0, 'produto, investimento e consumo caem');
+  assert(ir.pi.slice(0, 8).some(v => v < 0), 'inflação cai');
+  const imin = ir.inv.indexOf(Math.min(...ir.inv)); assert(imin >= 0, 'investimento tem pico');
+  assert(peakAbs(ir.inv) > peakAbs(ir.c) && peakAbs(ir.c) > peakAbs(ir.y) * 0.3, 'investimento reage mais que o consumo');
+  assert(Math.abs(ir.y[23]) < Math.abs(ir.y[2]), 'o efeito se dissipa');
+});
+
+// ---------- SW07 com parâmetros do SAMBA (calibração parcial, não é o SAMBA) ----------
+t('SW07 com parâmetros do SAMBA: determinado, e o choque de política tem os sinais esperados', () => {
+  const s = sw(M.CALIB.sw07_samba.over); assert(s.determinate, s.message);
+  const ir = D.irf(s, 'e_m', 24, 0.0032); // desvio-padrão do choque monetário no SAMBA: 0,32
+  assert(ir.r[0] > 0 && ir.y[0] < 0 && ir.inv[0] < 0 && ir.c[0] < 0, 'sinais de impacto');
+  assert(ir.pi.slice(0, 8).some(v => v < 0), 'inflação cai'); assert(Math.abs(ir.y[23]) < Math.abs(ir.y[3]), 'o efeito se dissipa');
+});
+t('SW07 com parâmetros do SAMBA: sem rigidez nominal a economia rígida replica a flexível', () => {
+  const s = sw(Object.assign({}, M.CALIB.sw07_samba.over, { xip: 1e-6, xiw: 1e-6 })); assert(s.ok, s.message);
+  const ir = D.irf(s, 'e_a', 20, 0.01);
+  for (const [v, f] of [['y', 'yf'], ['c', 'cf'], ['inv', 'invf']]) for (let k = 0; k < 20; k++) assert(Math.abs(ir[v][k] - ir[f][k]) < 2e-3 * Math.max(peakAbs(ir[f]), 0.005), v + ' k=' + k);
+});
+
 console.log('\n' + n + ' testes ok, ' + fails + ' falhas');
 process.exit(fails ? 1 : 0);
