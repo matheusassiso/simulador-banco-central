@@ -84,6 +84,16 @@ t('Dolarização com reservas insuficientes: converte só o que dá e avisa', ()
   const sim = C.newSim('hiper', { R: 0.001 }); run(sim, 3); C.event(sim, 'dollarize', { share: 0.95 });
   assert(sim.s.dforced < 0.5, 'conversão parcial: ' + sim.s.dforced); assert(sim.log.some(e => /insuficientes/.test(e.text)), 'aviso de reservas');
 });
+t('Desdolarização: recompõe a base com reservas, devolve o direito de emitir e zera a confiança', () => {
+  const sim = C.newSim('hiper', { mode: 'emissao', mu: 0.01, d: 0.01, R: 3 }); run(sim, 4); C.event(sim, 'dollarize', { share: 0.95 }); run(sim, 6);
+  const R0 = sim.s.R; C.event(sim, 'undollarize', {}); assert(sim.s.dforced === 0 && sim.s.cred === 0 && sim.s.R > R0, 'reservas ' + R0 + ' → ' + sim.s.R);
+  run(sim, 12); sim.hist.forEach(h => assert(Number.isFinite(h.l) && Number.isFinite(h.m), 'finito em t=' + h.t));
+  assert(sim.hist[sim.hist.length - 1].m > 0.05, 'a base voltou a ter saldo real relevante: ' + sim.hist[sim.hist.length - 1].m);
+});
+t('Teto numérico: a espiral avisa uma única vez e nada vira NaN', () => {
+  const sim = C.newSim('colapso', { mode: 'deficit', d: 5, i: 1e6 }); run(sim, 200);
+  assert(sim.log.filter(e => /teto numérico/.test(e.text)).length <= 1); sim.hist.forEach(h => assert(Number.isFinite(h.l) && Number.isFinite(h.m)));
+});
 t('Indicador lúdico: S″ e ℓ″ (segundas diferenças) são calculados e comparados', () => {
   const sim = C.newSim('cronica'); run(sim, 6); const h = sim.hist[5];
   assert(Number.isFinite(h.S2) && Number.isFinite(h.l2) && typeof h.okLaffer === 'boolean');

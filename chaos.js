@@ -79,6 +79,13 @@ function event(sim, name, a) {
     case 'peg': s.peg = { on: true, crawl: clamp(fin(a.crawl, 0.003), -0.05, 5) }; s.R = Math.max(s.R, fin(a.reserves, 2)); s.credPlan = Math.max(s.credPlan, 0.6);
       note(sim, 'Âncora cambial: câmbio fixado (rastejando ' + (s.peg.crawl * 100).toFixed(1) + '% ao mês), reservas de ' + s.R.toFixed(1) + ' meses de PIB.', 'ev'); break;
     case 'unpeg': if (s.peg.on) { s.peg.on = false; note(sim, 'Câmbio solto.', 'ev'); } break;
+    case 'undollarize': { // volta à moeda própria: o banco central recompõe a base vendendo moeda por dólares (reservas sobem)
+      if (!s.dforced) { note(sim, 'Não há dolarização forçada para desfazer.', ''); break; }
+      const le = clamp(s.le, -0.05, 40), Dsp = clamp(1 - Math.exp(-p.dolar * Math.max(0, le)), 0, 0.95);
+      const mdNew = Math.max(p.mfloor, p.m0 * Math.exp(-p.alpha * Math.max(le, -0.05)) * s.y * (1 - Dsp)), m = Math.exp(clamp(s.lnM - s.lnP, -60, 60)), add = Math.max(0, mdNew - m);
+      s.lnM = Math.log(Math.exp(clamp(s.lnM, -650, 650)) + add * Math.exp(clamp(s.lnP, -650, 650))); s.R += add; s.dforced = 0; s.credPlan = 0; s.cred = 0;
+      note(sim, 'Desdolarização: a moeda própria volta e o governo recupera o direito de emitir. A confiança some até a política provar que não vai imprimir.', 'alert'); break;
+    }
     case 'dollarize': { // troca a base por dólares ao câmbio vigente, pagando com as reservas; o governo perde a senhoriagem
       const want = clamp(fin(a.share, 1), 0, 0.95), m = Math.exp(clamp(s.lnM - s.lnP, -60, 60));
       if (want <= s.dforced) { note(sim, 'Já está pelo menos ' + Math.round(s.dforced * 100) + '% dolarizado.', ''); break; }
@@ -166,6 +173,7 @@ function step(sim, c) {
   rec.okLaffer = Number.isFinite(rec.S2) && rec.S2 > rec.l2;
   if (l > Math.log(1.5) && !sim._hyper) { sim._hyper = true; note(sim, 'Hiperinflação (mais de 50% ao mês).', 'alert'); }
   if (l < Math.log(1.5) * 0.5 && sim._hyper) { sim._hyper = false; note(sim, 'Saiu da hiperinflação.', 'good'); }
+  if (l >= 44.9 && !sim._ceil) { sim._ceil = true; note(sim, 'A inflação encostou no teto numérico do modelo (e^45 ao mês): daqui em diante os números deixam de ser informativos. Troque de moeda ou dolarize.', 'alert'); }
   if (m <= p.mfloor * 1.5 && !sim._dead) { sim._dead = true; note(sim, 'Os saldos reais chegaram ao piso: ninguém quer a moeda. Hora de trocar de moeda ou ancorar.', 'alert'); }
   return rec;
 }

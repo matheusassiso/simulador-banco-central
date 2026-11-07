@@ -1,5 +1,5 @@
 """Exporta o FRB/US (pyfrbus, Federal Reserve, domínio público) para dois arquivos JavaScript compactos:
-   frbus-model.js (equações da versão com expectativas VAR e coeficientes) e frbus-data.js (janela 2036Q1-2046Q4 do cenário base).
+   frbus-model.js (equações da versão com expectativas VAR e coeficientes) e frbus-data.js (janela 2036Q1-2070Q4 do cenário base).
 Uso (ambiente isolado):  venv-pyfrbus\\Scripts\\python.exe -I tools\\frbus_export.py <model.xml> <LONGBASE.TXT> <pasta de saída>
 """
 import json, re, sys
@@ -9,10 +9,16 @@ import pandas
 xml_path, data_path, out_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 root = ET.parse(xml_path).getroot()
 
-coeffs, endo, exo, eqs, defs = {}, [], [], {}, {}
+coeffs, endo, exo, eqs, defs, mce = {}, [], [], {}, {}, {}
 for v in root.findall('variable'):
     name = v.find('name').text.lower()
     kind = v.find('equation_type').text
+    me = v.find('mce_equation')  # versão com expectativas racionais (usa avanços)
+    if me is not None and me.find('python_equation') is not None and me.find('python_equation').text:
+        mc = {}
+        for c in me.findall('coeff'):
+            mc[re.sub(r'\((\d+)\)', r'_\1', c.find('cf_name').text.strip().lower())] = float(c.find('cf_value').text)
+        mce[name] = {'g': me.find('mce_group').text, 'eq': re.sub(r'\s+', ' ', me.find('python_equation').text.strip()), 'coef': mc}
     d = v.find('definition')
     if d is not None and d.text: defs[name] = re.sub(r'\s+', ' ', d.text.strip())
     if kind == 'Exogenous':
@@ -32,7 +38,7 @@ for v in root.findall('variable'):
 data = pandas.read_csv(data_path, index_col=0)
 data.index = pandas.PeriodIndex(data.index, freq='Q')
 data.columns = [c.lower() for c in data.columns]
-win = data.loc[pandas.Period('2036Q1'):pandas.Period('2046Q4')]
+win = data.loc[pandas.Period('2036Q1'):pandas.Period('2070Q4')]
 cols = [c for c in (endo + exo) if c in win.columns]
 missing = [c for c in endo + exo if c not in win.columns]
 series = {c: [None if pandas.isna(x) else float(x) for x in win[c].values] for c in cols}
@@ -43,6 +49,6 @@ def dump(var, obj, path):
           "(function(r){var d=" + s + ";if(typeof module!=='undefined'&&module.exports)module.exports=d;else r." + var + "=d;})(typeof window!=='undefined'?window:globalThis);\n")
     with open(path, 'w', encoding='utf-8') as f: f.write(js)
 
-dump('FRBUS_MODEL', {'endo': endo, 'exo': exo, 'eq': eqs, 'coef': coeffs, 'def': defs}, out_dir + '/frbus-model.js')
+dump('FRBUS_MODEL', {'endo': endo, 'exo': exo, 'eq': eqs, 'coef': coeffs, 'def': defs, 'mce': mce}, out_dir + '/frbus-model.js')
 dump('FRBUS_DATA', {'start': '2036Q1', 'n': len(win), 'series': series}, out_dir + '/frbus-data.js')
 print('endógenas', len(endo), 'exógenas', len(exo), 'coeficientes', len(coeffs), 'trimestres', len(win), 'séries', len(series), 'sem dado:', missing[:10])

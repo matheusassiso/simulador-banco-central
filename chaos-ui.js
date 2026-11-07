@@ -93,6 +93,7 @@ $('cxUrv').addEventListener('click', ev('urv', () => ({ months: num('cxUm', 4), 
 $('cxPeg').addEventListener('click', ev('peg', () => ({ crawl: num('cxPc', 0.3) / 100 })));
 $('cxUnpeg').addEventListener('click', ev('unpeg', () => ({})));
 $('cxDollar').addEventListener('click', ev('dollarize', () => ({ share: num('cxDz', 95) / 100 })));
+$('cxUndollar').addEventListener('click', ev('undollarize', () => ({})));
 window.addEventListener('resize', () => render());
 
 start('cronica');

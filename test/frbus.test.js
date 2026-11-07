@@ -17,4 +17,15 @@ for (const v of ref.variaveis) t('choque de 100 pb: "' + v + '" coincide com o p
   for (let k = 0; k < 24; k++) { mx = Math.max(mx, Math.abs(a[k] - b[k])); sc = Math.max(sc, Math.abs(b[k])); }
   assert(mx <= 1e-4 * Math.max(1, sc) + 1e-6, 'diferença máxima ' + mx + ' (escala ' + sc + ')');
 });
+const refM = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', 'ref', 'frbus-mce-choque-100pb.json'), 'utf8'));
+let outM; t0 = Date.now();
+t('MCE (mcap+wp): 80 trimestres convergem', () => {
+  outM = F.create(M, D, { mce: 'mcap+wp' }).run({ start: '2040Q1', n: 80, tol: 1e-4, override: { dfpdbt: 0, dfpsrp: 1, drstar: k => (k >= 39 ? 1 : 0) }, shocks: [{ v: 'rffintay_aerr', q: 0, d: 1 }] });
+  assert(outM.residual < 1e-6); console.log('     (' + (Date.now() - t0) + ' ms, ' + outM.sweeps + ' varreduras)');
+});
+for (const v of refM.variaveis) t('MCE, choque de 100 pb: "' + v + '" coincide com o pyfrbus (6% com tol 1e-4; 3e-6 com tol 1e-6)', () => {
+  const a = outM.dev[v], b = refM.desvio[v]; let mx = 0, sc = 0;
+  for (let k = 0; k < 80; k++) { mx = Math.max(mx, Math.abs(a[k] - b[k])); sc = Math.max(sc, Math.abs(b[k])); }
+  assert(mx <= 6e-2 * Math.max(sc, 1e-3), 'diferença máxima ' + mx + ' (escala ' + sc + ')');
+});
 console.log('\n' + n + ' testes ok, ' + fails + ' falhas'); process.exit(fails ? 1 : 0);
