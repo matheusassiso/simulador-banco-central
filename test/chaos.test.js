@@ -74,6 +74,16 @@ t('Valores absurdos (juros de 100.000.000% ao mês, emissão de 10^5, déficit e
     sim.hist.forEach(h => { for (const f of ['l', 'pct', 'lnPTotal', 'm', 'S', 'y', 'R', 'cred', 'b', 'lnE', 'rReal', 'tax', 'md']) assert(Number.isFinite(h[f]), key + ' ' + f + ' = ' + h[f] + ' em t=' + h.t); });
   }
 });
+t('Dolarização forçada: paga com reservas, derruba a inflação e a senhoriagem, e o déficit passa a engordar a dívida', () => {
+  const sim = C.newSim('hiper', { mode: 'deficit', d: 0.04, i: 0.05, mu: 0.4, R: 3 }); run(sim, 6); const R0 = sim.s.R, lBefore = sim.hist[5].l, bBefore = sim.hist[5].b;
+  C.event(sim, 'dollarize', { share: 0.95 }); assert(sim.s.dforced > 0.94 && sim.s.R < R0, 'reservas pagas: ' + R0 + ' → ' + sim.s.R);
+  run(sim, 36); const h = sim.hist[sim.hist.length - 1];
+  assert(h.l < lBefore * 0.1, 'inflação cai: ' + lBefore + ' → ' + h.l); assert(Math.abs(h.S) < 0.01, 'senhoriagem some: ' + h.S); assert(h.b > bBefore, 'dívida cresce: ' + bBefore + ' → ' + h.b);
+});
+t('Dolarização com reservas insuficientes: converte só o que dá e avisa', () => {
+  const sim = C.newSim('hiper', { R: 0.001 }); run(sim, 3); C.event(sim, 'dollarize', { share: 0.95 });
+  assert(sim.s.dforced < 0.5, 'conversão parcial: ' + sim.s.dforced); assert(sim.log.some(e => /insuficientes/.test(e.text)), 'aviso de reservas');
+});
 t('Indicador lúdico: S″ e ℓ″ (segundas diferenças) são calculados e comparados', () => {
   const sim = C.newSim('cronica'); run(sim, 6); const h = sim.hist[5];
   assert(Number.isFinite(h.S2) && Number.isFinite(h.l2) && typeof h.okLaffer === 'boolean');

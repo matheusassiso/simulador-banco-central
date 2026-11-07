@@ -604,6 +604,9 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
           <span></span>
           <label class="dsge-par"><span>Âncora: desvalorização (% ao mês)</span><input id="cxPc" type="number" step="any" value="0.3"></label>
           <div class="row"><button class="btn" id="cxPeg">Fixar câmbio</button><button class="btn" id="cxUnpeg">Soltar</button></div>
+          <label class="dsge-par"><span>Dolarizar (% da base, paga com reservas)</span><input id="cxDz" type="number" value="95"></label>
+          <button class="btn" id="cxDollar">Dolarizar</button>
+          <span></span>
         </div>
       </div>
     </div>
@@ -685,6 +688,24 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
       <div class="row" style="align-items:center"><button class="btn primary" id="bcbLoad" style="flex:none">Baixar dados do BCB</button><span id="bcbMsg" class="hint" style="flex:1">—</span></div>
       <canvas id="bcbChart" style="width:100%;height:220px;margin-top:8px"></canvas>
       <div class="legend"><span style="color:var(--s-r)"><i></i>Selic meta</span><span style="color:var(--s-inf)"><i></i>IPCA 12m</span><span style="color:var(--s-u)"><i class="d"></i>Regra de Taylor didática</span></div>
+    </div>
+
+    <h3 style="margin:26px 0 8px"><span>FRB/US: o modelo do Federal Reserve</span> <span class="label">284 equações · dados e cenário base do Fed (EUA)</span></h3>
+    <p class="intro">O modelo macroeconométrico oficial do Fed (domínio público), com expectativas VAR, rodando aqui em JavaScript. Escolha um choque, o tamanho, por quantos trimestres e o horizonte; os gráficos mostram o desvio em relação ao cenário base. Validado contra o pyfrbus oficial: a diferença máxima no choque padrão de 100 pontos-base é de 8e-7. Unidades e definições são as do Fed (em inglês).</p>
+    <div class="card">
+      <div class="row" style="align-items:end">
+        <label class="dsge-par" style="flex:2"><span>Choque</span><select id="fbShock"><option value="rffintay_aerr">Juros: desvio da regra de Taylor (pontos percentuais)</option><option value="egfe_aerr">Gastos do governo federal (fator de ajuste, em log)</option><option value="custom">Outra variável: fator de ajuste ou exógena (nome abaixo)</option></select></label>
+        <label class="dsge-par"><span>Tamanho</span><input id="fbSize" type="number" step="any" value="1"></label>
+        <label class="dsge-par"><span>Trimestres de duração</span><input id="fbDur" type="number" min="1" max="24" value="1"></label>
+        <label class="dsge-par"><span>Horizonte (trimestres)</span><input id="fbHor" type="number" min="4" max="28" value="24"></label>
+        <button class="btn primary" id="fbRun" style="flex:none">Rodar FRB/US</button>
+      </div>
+      <div class="row" style="margin-top:8px;align-items:end">
+        <label class="dsge-par" style="flex:1"><span>Nome da variável (se "outra")</span><input id="fbCustom" type="text" placeholder="ex.: picxfe_aerr, ecnia_aerr, dfpex"></label>
+        <label class="dsge-par" style="flex:2"><span>Variáveis nos gráficos (nomes do FRB/US separados por vírgula)</span><input id="fbVars" type="text" value="rff, rg10, lur, xgap2, picxfe, xgdp"></label>
+      </div>
+      <div id="fbMsg" class="hint">—</div>
+      <div class="grid2" id="fbCharts" style="margin-top:8px"></div>
     </div>
   </div>
 </section>
@@ -1583,6 +1604,10 @@ if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 <script src="dsge.js"></script>
 <script src="dsge-models.js"></script>
 <script src="research.js"></script>
+<script src="frbus.js"></script>
+<script src="frbus-model.js"></script>
+<script src="frbus-data.js"></script>
+<script src="frbus-ui.js"></script>
 <script src="chaos.js"></script>
 <script src="chaos-ui.js"></script>
 <script src="lang.js"></script>

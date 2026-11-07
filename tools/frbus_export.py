@@ -9,10 +9,12 @@ import pandas
 xml_path, data_path, out_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 root = ET.parse(xml_path).getroot()
 
-coeffs, endo, exo, eqs = {}, [], [], {}
+coeffs, endo, exo, eqs, defs = {}, [], [], {}, {}
 for v in root.findall('variable'):
     name = v.find('name').text.lower()
     kind = v.find('equation_type').text
+    d = v.find('definition')
+    if d is not None and d.text: defs[name] = re.sub(r'\s+', ' ', d.text.strip())
     if kind == 'Exogenous':
         exo.append(name)
     else:
@@ -41,6 +43,6 @@ def dump(var, obj, path):
           "(function(r){var d=" + s + ";if(typeof module!=='undefined'&&module.exports)module.exports=d;else r." + var + "=d;})(typeof window!=='undefined'?window:globalThis);\n")
     with open(path, 'w', encoding='utf-8') as f: f.write(js)
 
-dump('FRBUS_MODEL', {'endo': endo, 'exo': exo, 'eq': eqs, 'coef': coeffs}, out_dir + '/frbus-model.js')
+dump('FRBUS_MODEL', {'endo': endo, 'exo': exo, 'eq': eqs, 'coef': coeffs, 'def': defs}, out_dir + '/frbus-model.js')
 dump('FRBUS_DATA', {'start': '2036Q1', 'n': len(win), 'series': series}, out_dir + '/frbus-data.js')
 print('endógenas', len(endo), 'exógenas', len(exo), 'coeficientes', len(coeffs), 'trimestres', len(win), 'séries', len(series), 'sem dado:', missing[:10])

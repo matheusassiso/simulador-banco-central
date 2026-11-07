@@ -72,6 +72,7 @@ function render() {
     + cell('Mês', String(s.t)) + cell('Inflação ao mês', big(pct * 100) + '%', pct > 0.5 ? 'bad' : pct > 0.05 ? 'warn' : 'good') + cell('Inflação anualizada', big(ann * 100) + '%')
     + cell('Saldo real (% do normal)', last ? big(100 * last.m / sim.p.m0) + '%' : '—') + cell('Senhoriagem (% do PIB mensal)', last ? big(last.S * 100) + '%' : '—')
     + cell('Credibilidade', Math.round(s.cred * 100) + '%') + cell('Reservas (meses de PIB)', big(s.R)) + cell('Produto', Math.round(s.y * 100) + '% do normal', s.y < 0.7 ? 'bad' : '')
+    + cell('Dolarização das transações', last ? Math.round(last.D * 100) + '%' + (s.dforced ? ' (forçada ' + Math.round(s.dforced * 100) + '%)' : '') : '0%')
     + cell('Escassez · ágio', Math.round(s.shortage * 100) + '% · ' + big(s.agio * 100) + '%') + cell('Dívida (meses de PIB)', big(s.b))
     + cell('Regime', (s.freeze.on ? 'congelado' : 'preços livres') + (s.peg.on ? ' · âncora cambial' : '') + (s.urv.on ? ' · URV' : ''));
   $('cxLog').innerHTML = sim.log.slice(-40).reverse().map(e => '<li class="' + esc(e.kind) + '"><time>mês ' + e.t + '</time><span>' + esc(e.text) + '</span></li>').join('') || '<li><time>—</time><span>Escolha a política e avance os meses.</span></li>';
@@ -91,6 +92,7 @@ $('cxHeli').addEventListener('click', ev('helicopter', () => ({ share: num('cxHe
 $('cxUrv').addEventListener('click', ev('urv', () => ({ months: num('cxUm', 4), k: 3, name: 'Real' })));
 $('cxPeg').addEventListener('click', ev('peg', () => ({ crawl: num('cxPc', 0.3) / 100 })));
 $('cxUnpeg').addEventListener('click', ev('unpeg', () => ({})));
+$('cxDollar').addEventListener('click', ev('dollarize', () => ({ share: num('cxDz', 95) / 100 })));
 window.addEventListener('resize', () => render());
 
 start('cronica');
