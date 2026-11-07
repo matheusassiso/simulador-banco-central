@@ -52,3 +52,13 @@ Implementação própria, inspirada nas ideias de simuladores de política monet
 - Tutorial na primeira visita e botao "Como jogar".
 - Barra fixa "Avancar" no celular.
 - Ingles (botao EN/PT): `lang.js` traduz a interface e os eventos do diario; frases novas sem traducao ficam em portugues.
+
+## App de desktop (sem navegador)
+
+O jogo tambem roda como app do Windows, offline, com janela e menu nativos (Jogo, Modo, Cenario, Exibir, Idioma, Ajuda) e barra lateral com um painel por vez.
+
+- Rodar em desenvolvimento: `npm install` e `npm run app`.
+- Gerar o executavel portatil: `npm run dist` (saida em `dist/`, sem precisar instalar).
+- Teste de fumaca: `SMOKE_OUT=smoke npx electron app/smoke.js`.
+
+O idioma padrao e portugues do Brasil; o menu Idioma troca para ingles.
