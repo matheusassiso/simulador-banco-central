@@ -104,6 +104,39 @@ oficial: +100 pb em `rffintay_aerr` em 2040Q1, meta de superávit. Resultado sal
 O comportamento é o esperado (juro maior, desemprego maior, inflação menor). Isso é referência para uma futura versão em JavaScript do FRB/US:
 o portador terá de reproduzir esses números.
 
+## 4c. Status (segunda rodada)
+
+Feito, com 20 testes passando (`node test/dsge.test.js`):
+- **Política ótima (Galí 2015, cap. 5).** Discrição, compromisso e regra de Taylor com choque de custos. Testes: fórmula fechada da discrição
+  (π = u/(1 + κ²/α − βρ) e x = −(κ/α)π, erro < 1e-10), nível de preços = −(α/κ)·x sob compromisso e perdas na ordem
+  compromisso < discrição < Taylor. Na tela, a regra de Taylor tem perda 3,45 vezes a da ótima com compromisso.
+- **Limite zero do juro** (`occbin` em `dsge.js`, previsão perfeita, palpite e verificação do número T de trimestres no piso). Choque pequeno
+  não restringe e iguala o linear; choque grande (3 desvios-padrão negativos no juro natural) fica 6 trimestres no piso, com juro-sombra abaixo
+  do piso e recessão maior que a linear.
+- **Calibração do Brasil para o Galí-Monacelli: DIDÁTICA.** α = 0,14, θ = 0,80, β = 0,989, φ = 2, ρa = 0,9, φπ = 1,5. São ordens de grandeza,
+  não estimativas. A calibração estimada do BCB é a do SAMBA (WP 239).
+- **Desafio** no painel Pesquisa: o jogador escolhe o desvio da regra de Taylor a cada trimestre contra choques sorteados; a perda é comparada com
+  Taylor e com a política ótima sob os mesmos choques. Com desvio zero a perda é idêntica à da regra de Taylor (verificado).
+- **Dados reais do BCB** (API SGS, com CORS aberto): Selic meta (432), IPCA 12m (13522) e IBC-Br dessazonalizado (24364) dos últimos 10 anos,
+  com regra de Taylor didática (juro de equilíbrio 4,5%, hiato por filtro HP, metas do CMN).
+
+**TANK (feito).** Baixei e li o rascunho de 2018 de Debortoli e Galí ("Monetary policy with heterogeneous agents: insights from TANK models",
+CREI), seção 3.4, e implementei a forma reduzida: curva de Phillips igual à do RANK e curva IS
+`x = E x' − (i − E π' − rn)/[σ(1+χy)]`, com `rn = (1−ρz)z + σ(1+χn)·ψa·E(Δa')` e χy, χn, H dados pelo artigo em função de λ, τ0, τd. Três
+regimes fiscais: sem transferências (τ0=τd=0), transferências constantes (1,0) e redistribuição total (1,1 = RANK). Validação (25 testes):
+- com redistribuição total χy = χn = 0 e a solução coincide com λ = 0 e com a fórmula analítica do NK;
+- sem transferências χy < 0 e χn = 0; com transferências constantes χy < 0 e χn > 0 (como o artigo afirma);
+- a condição de sinal do artigo, χy > 0 ⇔ (τ0−τd)/(1−τd) > (σ(1−α)+φ+α)/(Mp−1+α), vale em 200 sorteios (100 de cada sinal);
+- o choque de juros é amplificado em relação ao RANK. Com a inclinação do artigo (κ ≈ 0,06), o pico do hiato é 0,48% sem transferências contra
+  0,34% no RANK (razão 1,41); com Calvo θ = 0,75 (κ ≈ 0,23) a razão cai para 1,25. O pico cresce com λ (0,29% para 0,42% de λ = 0,21 para 0,40).
+Limite: os números exatos da Figura 1 do artigo não foram extraídos, então a conferência é qualitativa e por fórmulas, não ponto a ponto.
+O artigo calibra a curva de Phillips por custo de ajuste de Rotemberg (ξ = 372,8, ε = 9); aqui há duas opções: Calvo com θ = 0,75 (padrão) ou
+θ = 0,8655, que dá κ ≈ 0,06.
+
+Pendente, com o motivo:
+- **Smets-Wouters 2007:** cerca de 40 equações; sem Dynare instalado não há como validar a transcrição além de determinação e plausibilidade.
+- **SAMBA (WP 239) e FRB/US em JavaScript:** os trabalhos mais longos; seguem como estavam.
+
 ## 5. Próximos passos propostos
 
 1. ~~Mini-parser + solver doubling + testes de propriedades.~~ Feito.

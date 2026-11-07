@@ -65,5 +65,75 @@ t('parser: precedência (−2^2 = −4; 2^3^2 = 512)', () => {
   near(nm.p, -4, 1e-12); near(nm.q, 512, 1e-12);
 });
 
+// ---------- política ótima (Galí 2015, cap. 5) ----------
+const cpS = k => D.solve(D.parse(M.MODELS[k].text));
+const W = s => ({ pi: 1, x: s.lin.names.alpha });
+t('Discrição: π = u/(1 + κ²/α − βρ) e x = −(κ/α)·π (fórmula fechada)', () => {
+  const s = cpS('cp_discr'); assert(s.determinate, s.message);
+  const p = s.lin.names, ir = D.irf(s, 'eu', 8, 1);
+  for (let k = 0; k < 8; k++) {
+    const u = Math.pow(p.rhou, k), pi = u / (1 + p.kappa * p.kappa / p.alpha - p.beta * p.rhou);
+    near(ir.pi[k], pi, 1e-10, 'pi[' + k + ']'); near(ir.x[k], -(p.kappa / p.alpha) * pi, 1e-10, 'x[' + k + ']');
+  }
+});
+t('Compromisso: o nível de preços (soma de π) é −(α/κ)·x em todo o horizonte', () => {
+  const s = cpS('cp_commit'); assert(s.determinate, s.message);
+  const p = s.lin.names, ir = D.irf(s, 'eu', 40, 1); let P = 0;
+  for (let k = 0; k < 40; k++) { P += ir.pi[k]; near(P, -(p.alpha / p.kappa) * ir.x[k], 1e-9, 'k=' + k); }
+});
+t('Perda de bem-estar: compromisso < discrição < regra de Taylor', () => {
+  const Lc = D.loss(cpS('cp_commit'), W(cpS('cp_commit'))), Ld = D.loss(cpS('cp_discr'), W(cpS('cp_discr'))), Lt = D.loss(cpS('cp_taylor'), W(cpS('cp_taylor')));
+  assert(Lc < Ld, 'compromisso ' + Lc + ' não é menor que discrição ' + Ld); assert(Ld < Lt, 'discrição ' + Ld + ' não é menor que Taylor ' + Lt);
+});
+
+// ---------- limite zero (estilo OccBin) ----------
+const zN = D.parse(M.MODELS.nk_zlb.text), zF = D.parse(M.MODELS.nk_zlb.floorText), iss = 1 / 0.99 - 1;
+t('ZLB: choque pequeno não bate no piso e iguala a solução linear', () => {
+  const r = D.occbin(zN, zF, {}, 'en', -0.0005, { floor: -iss }); assert(r.ok, r.message); assert(r.T === 0, 'T=' + r.T);
+});
+t('ZLB: choque grande fica no piso, o juro-sombra está abaixo do piso e a recessão é maior que a linear', () => {
+  const r = D.occbin(zN, zF, {}, 'en', -0.03, { floor: -iss }); assert(r.ok, r.message); assert(r.T > 0, 'T=' + r.T);
+  for (let k = 0; k < 40; k++) {
+    if (k < r.T) { near(r.path.i[k], -iss, 1e-10, 'i[' + k + '] no piso'); assert(r.path.ishadow[k] < -iss, 'sombra[' + k + ']'); }
+    else assert(r.path.ishadow[k] >= -iss - 1e-9, 'fora do piso, sombra[' + k + ']');
+  }
+  const minZ = Math.min(...r.path.x), minL = Math.min(...r.linear.x);
+  assert(minZ < minL, 'recessão ZLB ' + minZ + ' deveria ser maior que a linear ' + minL);
+});
+
+// ---------- TANK (Debortoli e Galí, 2018, seção 3.4) ----------
+const tk = (key, over) => { const m = D.parse(M.MODELS[key].text); return D.solve(m, over || {}); };
+const peakAbs = a => a.reduce((s, v) => Math.max(s, Math.abs(v)), 0);
+t('TANK: os três regimes de transferência são determinados', () => { for (const k of ['tank_notr', 'tank_const', 'tank_rank']) assert(tk(k).determinate, k + ': ' + tk(k).message); });
+t('TANK com redistribuição total (τ0=τd=1) é o RANK: χy=χn=0, igual a λ=0 e à solução analítica', () => {
+  const s = tk('tank_rank'), s0 = tk('tank_rank', { lambda: 0 }), p = s.lin.names;
+  near(p.chiy, 0, 1e-12); near(p.chin, 0, 1e-12);
+  const a = D.irf(s, 'en', 8, 1), b = D.irf(s0, 'en', 8, 1);
+  const rho = p.rhonu, Lam = (1 - p.beta * rho) * (p.sigma * (1 - rho) + p.phix) + p.kap * (p.phipi - rho);
+  for (let k = 0; k < 8; k++) { near(a.x[k], b.x[k], 1e-12, 'x vs λ=0'); near(a.x[k], -(1 - p.beta * rho) / Lam * Math.pow(rho, k), 1e-9, 'x analítico[' + k + ']'); }
+});
+t('TANK: sem transferências χy<0 e χn=0; com transferências constantes χy<0 e χn>0 (como no artigo)', () => {
+  const a = tk('tank_notr').lin.names, c = tk('tank_const').lin.names;
+  assert(a.chiy < 0 && Math.abs(a.chin) < 1e-12, 'sem transf.: χy=' + a.chiy + ' χn=' + a.chin);
+  assert(c.chiy < 0 && c.chin > 0, 'constantes: χy=' + c.chiy + ' χn=' + c.chin);
+});
+t('TANK: χy>0 se e só se (τ0−τd)/(1−τd) > (σ(1−α)+φ+α)/(Mp−1+α), a condição do artigo (200 sorteios)', () => {
+  let seed = 11; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  let positives = 0, negatives = 0;
+  for (let k = 0; k < 200; k++) {
+    const taud = r() * 0.9, tau0 = taud + r() * (1 - taud), hi = k % 2 === 0, // metade dos sorteios com markup alto e σ, φ baixos, onde χy > 0 é possível
+      alpha = 0.1 + r() * (hi ? 0.2 : 0.5), sigma = 0.3 + r() * (hi ? 0.7 : 3), phi = 0.2 + r() * (hi ? 0.8 : 3), eps = hi ? 1.1 + r() * 0.8 : 3 + r() * 10, lam = 0.05 + r() * 0.5;
+    const p = D.linearize(D.parse(M.MODELS.tank_notr.text), { tau0, taud, alpha, sigma, phi, eps, lambda: lam }).names;
+    const Mp = eps / (eps - 1), cond = (tau0 - taud) / (1 - taud) > (sigma * (1 - alpha) + phi + alpha) / (Mp - 1 + alpha);
+    if (cond) positives++; else negatives++;
+    assert((p.chiy > 0) === cond, 'k=' + k + ' χy=' + p.chiy + ' condição=' + cond);
+  }
+  assert(positives >= 10 && negatives >= 10, 'sorteio desbalanceado: ' + positives + ' com χy>0, ' + negatives + ' com χy<0');
+});
+t('TANK: o choque de política é amplificado sem transferências e com transferências constantes, versus o RANK', () => {
+  const r = peakAbs(D.irf(tk('tank_rank'), 'en', 24, 0.0025).x), n = peakAbs(D.irf(tk('tank_notr'), 'en', 24, 0.0025).x), c = peakAbs(D.irf(tk('tank_const'), 'en', 24, 0.0025).x);
+  assert(n > r, 'sem transf. ' + n + ' deveria superar RANK ' + r); assert(c > r, 'constantes ' + c + ' deveria superar RANK ' + r);
+});
+
 console.log('\n' + n + ' testes ok, ' + fails + ' falhas');
 process.exit(fails ? 1 : 0);

@@ -572,10 +572,12 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
     <div class="row" style="align-items:center;margin-bottom:10px">
       <select id="dsgeModel" aria-label="Modelo" style="flex:2"></select>
       <select id="dsgeShock" aria-label="Choque" style="flex:1"></select>
-      <select id="dsgeSize" aria-label="Tamanho do choque" style="flex:1"><option value="sd">Choque de 1 desvio-padrão</option><option value="one">Choque de 1 unidade</option></select>
+      <input id="dsgeMult" type="number" step="0.5" value="1" aria-label="Tamanho do choque em desvios-padrão" title="Tamanho do choque (× desvio-padrão)" style="flex:1;min-width:90px;padding:8px;border:1px solid var(--rule);border-radius:10px;background:var(--paper)">
+      <select id="dsgeCalib" aria-label="Calibração" style="flex:1" hidden></select>
       <button class="btn primary" id="dsgeRun" style="flex:none">Resolver texto</button>
     </div>
-    <label class="check" style="margin-bottom:8px"><input type="checkbox" id="dsgeCmp"><span><b>Comparar os 4 regimes de política</b> (disponível nos modelos de economia aberta)</span></label>
+    <label class="check" style="margin-bottom:8px"><input type="checkbox" id="dsgeCmp"><span><b>Comparar regimes de política</b> (disponível nos modelos com variantes de política)</span></label>
+    <div id="dsgeCalibNote" class="hint" hidden></div>
     <div id="dsgeMsg" class="hint">—</div>
     <div class="share" style="margin-top:12px">
       <div class="card"><h3><span>Modelo (texto)</span></h3><textarea id="dsgeText" spellcheck="false" style="min-height:300px;font-size:.76rem;margin-top:8px"></textarea></div>
@@ -586,6 +588,33 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
     </div>
     <h3 style="margin:16px 0 8px"><span>Funções de impulso-resposta</span> <span class="label" id="dsgeUnit">24 trimestres</span></h3>
     <div class="grid2" id="dsgeCharts"></div>
+    <div id="dsgeLossWrap" class="card" style="margin-top:14px" hidden>
+      <h3><span>Perda de bem-estar</span><span class="label">variância de π + α · variância de x (× 10⁴)</span></h3>
+      <div class="tbl-wrap"><table><thead><tr><th>Regime</th><th>Perda</th><th>Relativa ao melhor</th></tr></thead><tbody id="dsgeLoss"></tbody></table></div>
+    </div>
+
+    <h3 style="margin:26px 0 8px"><span>Desafio: ganhe do banco central ótimo</span> <span class="label">20 trimestres</span></h3>
+    <p class="intro">Choques de custos e do juro natural são sorteados. A cada trimestre você escolhe o desvio em relação à regra de Taylor; os agentes esperam a regra e são surpreendidos pelo desvio. A perda é π² + α·x², somada. Compare com a regra de Taylor e com a política ótima, sob os mesmos choques.</p>
+    <div class="card">
+      <div class="row" style="align-items:center">
+        <label class="label" for="chV" style="flex:none">Desvio da regra (p.p.) <b id="chVal" class="mono">0,00</b></label>
+        <input type="range" id="chV" min="-2" max="2" step="0.05" value="0" style="flex:2">
+        <button class="btn primary" id="chStep" style="flex:none">Avançar um trimestre ▸</button>
+        <button class="btn" id="chNew" style="flex:none">Novo desafio</button>
+      </div>
+      <div id="chInfo" class="hint">—</div>
+      <div class="grid2" style="margin-top:8px"><div><div class="label">Inflação (p.p.)</div><canvas id="chC1" style="width:100%;height:130px"></canvas></div><div><div class="label">Hiato do produto (p.p.)</div><canvas id="chC2" style="width:100%;height:130px"></canvas></div></div>
+      <div class="legend"><span style="color:var(--s-r)"><i></i>Você</span><span style="color:var(--s-u)"><i class="d"></i>Regra de Taylor</span><span style="color:var(--s-4)"><i class="d"></i>Ótima com compromisso</span></div>
+      <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Estratégia</th><th>Perda acumulada (× 10⁴)</th></tr></thead><tbody id="chTable"></tbody></table></div>
+    </div>
+
+    <h3 style="margin:26px 0 8px"><span>Dados reais do Brasil (BCB)</span> <span class="label">API pública do Banco Central</span></h3>
+    <p class="intro">Baixa Selic, IPCA em 12 meses e IBC-Br dos últimos 10 anos e compara a Selic com o que uma regra de Taylor didática prescreveria (juro real de equilíbrio 4,5%, hiato do IBC-Br por filtro HP, metas do CMN). Precisa de internet; os números são exploratórios, não são recomendação.</p>
+    <div class="card">
+      <div class="row" style="align-items:center"><button class="btn primary" id="bcbLoad" style="flex:none">Baixar dados do BCB</button><span id="bcbMsg" class="hint" style="flex:1">—</span></div>
+      <canvas id="bcbChart" style="width:100%;height:220px;margin-top:8px"></canvas>
+      <div class="legend"><span style="color:var(--s-r)"><i></i>Selic meta</span><span style="color:var(--s-inf)"><i></i>IPCA 12m</span><span style="color:var(--s-u)"><i class="d"></i>Regra de Taylor didática</span></div>
+    </div>
   </div>
 </section>
 

@@ -223,7 +223,8 @@ function names(m, over) { // avalia parâmetros (na ordem) e definições locais
   return env.names;
 }
 
-function linearize(m, over) {
+function linearize(m, over, opt) {
+  opt = opt || {};
   const n = m.vars.length, k = m.exo.length, nm = names(m, over);
   const idx = Object.fromEntries(m.vars.map((v, i) => [v, i])), xidx = Object.fromEntries(m.exo.map((v, i) => [v, i]));
   const A = zeros(n, n), B = zeros(n, n), C = zeros(n, n), D = zeros(n, Math.max(k, 1));
@@ -232,17 +233,17 @@ function linearize(m, over) {
     return m.parsed.eqs.map(e => evalAst(e.lhs, env) - evalAst(e.rhs, env));
   };
   const z = new Array(n).fill(0), zs = new Array(k).fill(0), r0 = resid(z, z, z, zs);
-  if (r0.some(v => Math.abs(v) > 1e-10)) throw new Error('O modelo não está em desvios (resíduo não nulo na origem). Use forma linear sem constantes.');
+  if (!opt.allowConst && r0.some(v => Math.abs(v) > 1e-10)) throw new Error('O modelo não está em desvios (resíduo não nulo na origem). Use forma linear sem constantes.');
   for (let j = 0; j < n; j++) {
     const e = z.slice(); e[j] = 1;
     const a = resid(e, z, z, zs), b = resid(z, e, z, zs), c = resid(z, z, e, zs);
-    for (let i = 0; i < n; i++) { A[i][j] = a[i]; B[i][j] = b[i]; C[i][j] = c[i]; }
+    for (let i = 0; i < n; i++) { A[i][j] = a[i] - r0[i]; B[i][j] = b[i] - r0[i]; C[i][j] = c[i] - r0[i]; }
   }
   for (let j = 0; j < k; j++) {
-    const s = zs.slice(); s[j] = 1; const d = resid(z, z, z, s); for (let i = 0; i < n; i++) D[i][j] = d[i];
+    const s = zs.slice(); s[j] = 1; const d = resid(z, z, z, s); for (let i = 0; i < n; i++) D[i][j] = d[i] - r0[i];
   }
   const sd = {}; for (const x of m.exo) sd[x] = m.parsed.std[x] ? evalAst(m.parsed.std[x], { names: nm, v() { return 0; }, x() { return 0; } }) : 1;
-  return { A, B, C, D, n, k, sd, names: nm };
+  return { A, B, C, D, n, k, sd, names: nm, d: r0 };
 }
 
 /* ---------- solução, IRFs e momentos ---------- */
@@ -280,6 +281,63 @@ function moments(sol) { // desvios-padrão e autocorrelação de 1ª ordem (choq
   return { byVar: out, cov: S };
 }
 
-const api = { parse, linearize, solve, irf, moments, solveQME, specRad, lyap, _la: { mul, add, inv, lu, luSolve, eye, zeros, fro } };
+/* Perda de bem-estar: soma de pesos × variância incondicional (ex.: {pi: 1, x: alpha}). */
+function loss(sol, w) {
+  const mo = moments(sol); if (mo.nonStationary) return NaN;
+  let L = 0; for (const k in w) { const i = sol.vars.indexOf(k); if (i >= 0) L += w[k] * mo.cov[i][i]; }
+  return L;
+}
+
+/* Simula y(t) = X·y(t-1) + G·e(t) para uma sequência de choques (T vetores, um valor por choque do modelo). */
+function simulate(sol, shocks, y0) {
+  let y = y0 ? y0.slice() : new Array(sol.vars.length).fill(0); const out = {}; sol.vars.forEach(v => { out[v] = []; });
+  for (const e of shocks) {
+    const Xy = sol.X.map(r => r.reduce((s, v, c) => s + v * y[c], 0));
+    y = Xy.map((v, i) => v + sol.G[i].reduce((s, g, j) => s + g * (e[j] || 0), 0));
+    sol.vars.forEach((v, i) => out[v].push(y[i]));
+  }
+  return out;
+}
+
+/* Limite inferior do juro (estilo OccBin, previsão perfeita): palpite e verificação do número T de períodos no piso.
+   mN: modelo com a regra normal; mF: o mesmo modelo com o juro fixo no piso (pode ter constante). Os dois têm a variável
+   "sombra" (juro que a regra pediria). Resolve para um choque inicial; depois de T períodos a economia volta à regra normal. */
+function occbin(mN, mF, over, shockName, size, opt) {
+  opt = opt || {}; const Tmax = opt.Tmax || 80, shadow = opt.shadow || 'ishadow', floor = opt.floor;
+  const sN = solve(mN, over); if (!sN.ok) return { ok: false, message: 'Regime normal sem solução: ' + sN.message };
+  const LF = linearize(mF, over, { allowConst: true }), n = LF.n, k = sN.exo.length, j = sN.exo.indexOf(shockName);
+  if (j < 0) return { ok: false, message: 'Choque desconhecido: ' + shockName };
+  const e = new Array(k).fill(0); e[j] = size;
+  const zero = () => new Array(k).fill(0), iS = sN.vars.indexOf(shadow);
+  const lin = simulate(sN, [e].concat(Array.from({ length: Tmax - 1 }, zero)));
+  const eps = 1e-12, binds = (v, t) => v[t] < floor - eps;
+  const consistent = (path, T) => {
+    for (let t = 0; t < Tmax; t++) { const b = binds(path[shadow], t); if ((t < T) !== b) return false; }
+    return true;
+  };
+  if (consistent(lin, 0)) return { ok: true, T: 0, path: lin, linear: lin, message: 'O piso não restringe: igual à solução linear.' };
+  let best = null;
+  for (let T = 1; T <= Tmax - 2; T++) {
+    let P = sN.X, q = new Array(n).fill(0), bad = false; const Ps = new Array(T), qs = new Array(T);
+    for (let t = T - 1; t >= 0; t--) {
+      const F = lu(add(mul(LF.A, P), LF.B)); if (!F) { bad = true; break; }
+      const dv = LF.d.slice(); if (t === 0) for (let i = 0; i < n; i++) dv[i] += LF.D[i].reduce((s, v, c) => s + v * e[c], 0);
+      const rhs = dv.map((d, i) => d + LF.A[i].reduce((s, a, c) => s + a * q[c], 0));
+      const Pn = scale(luSolve(F, LF.C), -1), qn = luSolve(F, rhs.map(v => [-v])).map(r => r[0]);
+      Ps[t] = Pn; qs[t] = qn; P = Pn; q = qn;
+    }
+    if (bad) continue;
+    let y = new Array(n).fill(0); const arr = sN.vars.map(() => []);
+    for (let t = 0; t < Tmax; t++) {
+      y = t < T ? Ps[t].map((r, i) => r.reduce((s, v, c) => s + v * y[c], 0) + qs[t][i]) : sN.X.map(r => r.reduce((s, v, c) => s + v * y[c], 0));
+      arr.forEach((a, i) => a.push(y[i]));
+    }
+    const path = Object.fromEntries(sN.vars.map((v, i) => [v, arr[i]]));
+    if (consistent(path, T)) { best = { ok: true, T, path, linear: lin, message: 'No piso por ' + T + ' trimestre(s).' }; break; }
+  }
+  return best || { ok: false, linear: lin, message: 'Não achei uma sequência consistente de regimes até ' + (Tmax - 2) + ' trimestres.' };
+}
+
+const api = { parse, linearize, solve, irf, moments, loss, simulate, occbin, solveQME, specRad, lyap, _la: { mul, add, inv, lu, luSolve, eye, zeros, fro } };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.DSGE = api;
 })(typeof window !== 'undefined' ? window : globalThis);
