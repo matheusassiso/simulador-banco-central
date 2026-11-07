@@ -73,6 +73,10 @@ Painel "Pesquisa" (site e app): resolve modelos DSGE lineares com expectativas r
 
 Alem do solver e dos regimes do Gali-Monacelli: politica otima sem e com compromisso (Gali 2015, cap. 5) com perda de bem-estar, limite zero do juro (estilo OccBin), calibracao didatica do Brasil, um desafio (voce contra a politica otima) e dados reais do BCB (Selic, IPCA, IBC-Br) com regra de Taylor didatica. Testes: `node test/dsge.test.js` (20).
 
+### Laboratorio do Caos
+
+Painel "Caos" (site e app): hiperinflacao sem tetos. Juros, deficit e emissao aceitam qualquer numero (120%, 100000% ao mes). Eventos: congelamento de precos (Plano Cruzado), reforma monetaria com corte de zeros e moeda nova, confisco (Plano Collor), dinheiro de helicoptero, URV com conversao e ancora cambial (Plano Real). Mostra a curva de Laffer da senhoriagem, o saldo real, a escassez e o indicador S'' > l''. Codigo: `chaos.js` (motor, em logaritmos) e `chaos-ui.js`; testes: `node test/chaos.test.js` (11). Modelo didatico de Cagan, nao calibrado a nenhum pais. Limite conhecido: com o saldo real no piso e o deficit monetizado, a inflacao entra em espiral ate o teto do modelo.
+
 ### TANK
 
 Modelo de dois agentes (Debortoli e Gali, 2018): `tank_notr`, `tank_const` e `tank_rank` no painel Pesquisa, com comparacao dos tres regimes fiscais, lambda editavel e duas calibracoes da curva de Phillips. Testes: `node test/dsge.test.js` (25).
