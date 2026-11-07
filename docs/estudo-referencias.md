@@ -133,8 +133,24 @@ Limite: os números exatos da Figura 1 do artigo não foram extraídos, então a
 O artigo calibra a curva de Phillips por custo de ajuste de Rotemberg (ξ = 372,8, ε = 9); aqui há duas opções: Calvo com θ = 0,75 (padrão) ou
 θ = 0,8655, que dá κ ≈ 0,06.
 
+**Smets-Wouters 2007 (feito).** Modelo log-linear de 33 variáveis e 7 choques (economia rígida e economia flexível, que define o hiato na
+regra de juros), escrito com nomes próprios a partir das equações do artigo, conferido contra uma segunda implementação independente
+(`Smets_Wouters_2007_linear.jl`, MacroModelling.jl, MIT): equação por equação, as mesmas. Validação (29 testes):
+- solução determinada, resolvida pelo doubling em 11 iterações (resíduo ~1e-15, ~50 ms);
+- o doubling coincide (diferença máxima < 1e-7) com um solver independente por iteração de tempo linear, numa matriz de 33×33;
+- com rigidez nominal quase nula (ξp = ξw = 1e-6) a economia rígida replica a flexível para os quatro choques reais (produtividade, prêmio de
+  risco, gastos e investimento): produto, consumo, investimento, horas e salário, em 20 trimestres. Isso só vale se as equações comuns às duas
+  economias estiverem coerentes;
+- choque contracionista de política: juro sobe, produto, consumo e investimento caem (investimento mais que consumo), inflação cai, efeito se dissipa.
+  Com o choque de 1 desvio-padrão (0,24 p.p. trimestral), o pico do produto é −0,57% (trimestre 3) e o do investimento −0,90% (trimestre 5).
+Dois conjuntos de parâmetros, selecionáveis na tela: o do arquivo original `usmodel` (padrão; é também o do MacroModelling.jl) e o bloco
+`estimated_params` da réplica do Pfeifer. Os dois dão respostas parecidas (produto −0,57% e −0,55%), então o tamanho da resposta vem da
+estrutura do modelo e não do conjunto escolhido.
+Limites: os desvios-padrão estão em decimais (os do artigo ÷ 100); não comparei com as figuras do artigo ponto a ponto nem com o Dynare (não
+instalado); as equações de preços e salários foram validadas pelo limite sem rigidez e pela equivalência com a segunda fonte, não por números
+publicados.
+
 Pendente, com o motivo:
-- **Smets-Wouters 2007:** cerca de 40 equações; sem Dynare instalado não há como validar a transcrição além de determinação e plausibilidade.
 - **SAMBA (WP 239) e FRB/US em JavaScript:** os trabalhos mais longos; seguem como estavam.
 
 ## 5. Próximos passos propostos
