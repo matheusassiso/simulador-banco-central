@@ -227,6 +227,19 @@ dialog::backdrop{background:rgba(10,18,14,.55);backdrop-filter:blur(3px)}
 .dsge-par{display:flex;flex-direction:column;gap:2px;font-size:.72rem;color:var(--muted)}
 .dsge-par input{padding:6px 8px;font-family:var(--f-data);font-size:.82rem;width:100%}
 #dsgeText{font-family:var(--f-data);width:100%;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);padding:10px;resize:vertical}
+/* níveis de uso: revelação progressiva */
+html[data-level="1"] [data-min="2"],html[data-level="1"] [data-min="3"],html[data-level="1"] [data-min="4"],
+html[data-level="2"] [data-min="3"],html[data-level="2"] [data-min="4"],html[data-level="3"] [data-min="4"],
+html:not([data-level="1"]) [data-max="1"]{display:none!important}
+html[data-level="1"] .desk hr.sep,html[data-level="2"] .desk hr.sep{display:none}
+.lvl-sel{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:.8rem;color:var(--muted);white-space:nowrap}
+.lvl-sel select{width:auto;padding:5px 8px;border-radius:999px}
+html.app .tabs .lvl-sel{margin:auto 0 0;padding:8px 8px 0;flex-direction:column;align-items:stretch}
+.lvl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 4px}
+.lvl-card{text-align:left;border:1px solid var(--rule);border-radius:14px;background:var(--paper);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:border-color .2s,transform .15s}
+.lvl-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.lvl-card b{font-family:var(--f-display);font-size:1.05rem}.lvl-card span{font-size:.78rem;color:var(--muted);line-height:1.35}
+@media (max-width:520px){.lvl-grid{grid-template-columns:1fr}}
 .mbar{display:none}
 @media (max-width:980px){
   .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;gap:14px;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right));background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--rule);box-shadow:0 -8px 24px -16px rgba(0,0,0,.35)}
@@ -604,6 +617,9 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
           <span></span>
           <label class="dsge-par"><span>Âncora: desvalorização (% ao mês)</span><input id="cxPc" type="number" step="any" value="0.3"></label>
           <div class="row"><button class="btn" id="cxPeg">Fixar câmbio</button><button class="btn" id="cxUnpeg">Soltar</button></div>
+          <label class="dsge-par"><span>Dolarizar (% da base, paga com reservas)</span><input id="cxDz" type="number" value="95"></label>
+          <button class="btn" id="cxDollar">Dolarizar</button>
+          <span></span>
         </div>
       </div>
     </div>
@@ -686,6 +702,24 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
       <canvas id="bcbChart" style="width:100%;height:220px;margin-top:8px"></canvas>
       <div class="legend"><span style="color:var(--s-r)"><i></i>Selic meta</span><span style="color:var(--s-inf)"><i></i>IPCA 12m</span><span style="color:var(--s-u)"><i class="d"></i>Regra de Taylor didática</span></div>
     </div>
+
+    <h3 style="margin:26px 0 8px"><span>FRB/US: o modelo do Federal Reserve</span> <span class="label">284 equações · dados e cenário base do Fed (EUA)</span></h3>
+    <p class="intro">O modelo macroeconométrico oficial do Fed (domínio público), com expectativas VAR, rodando aqui em JavaScript. Escolha um choque, o tamanho, por quantos trimestres e o horizonte; os gráficos mostram o desvio em relação ao cenário base. Validado contra o pyfrbus oficial: a diferença máxima no choque padrão de 100 pontos-base é de 8e-7. Unidades e definições são as do Fed (em inglês).</p>
+    <div class="card">
+      <div class="row" style="align-items:end">
+        <label class="dsge-par" style="flex:2"><span>Choque</span><select id="fbShock"><option value="rffintay_aerr">Juros: desvio da regra de Taylor (pontos percentuais)</option><option value="egfe_aerr">Gastos do governo federal (fator de ajuste, em log)</option><option value="custom">Outra variável: fator de ajuste ou exógena (nome abaixo)</option></select></label>
+        <label class="dsge-par"><span>Tamanho</span><input id="fbSize" type="number" step="any" value="1"></label>
+        <label class="dsge-par"><span>Trimestres de duração</span><input id="fbDur" type="number" min="1" max="24" value="1"></label>
+        <label class="dsge-par"><span>Horizonte (trimestres)</span><input id="fbHor" type="number" min="4" max="28" value="24"></label>
+        <button class="btn primary" id="fbRun" style="flex:none">Rodar FRB/US</button>
+      </div>
+      <div class="row" style="margin-top:8px;align-items:end">
+        <label class="dsge-par" style="flex:1"><span>Nome da variável (se "outra")</span><input id="fbCustom" type="text" placeholder="ex.: picxfe_aerr, ecnia_aerr, dfpex"></label>
+        <label class="dsge-par" style="flex:2"><span>Variáveis nos gráficos (nomes do FRB/US separados por vírgula)</span><input id="fbVars" type="text" value="rff, rg10, lur, xgap2, picxfe, xgdp"></label>
+      </div>
+      <div id="fbMsg" class="hint">—</div>
+      <div class="grid2" id="fbCharts" style="margin-top:8px"></div>
+    </div>
   </div>
 </section>
 
@@ -738,6 +772,20 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="mbar" id="mbar"><div><div class="label">Mês</div><b class="mono" id="mbMonth">—</b></div><div><div class="label" id="mbRateL">Juro</div><b class="mono" id="mbRate">—</b></div><button class="btn primary" id="mbStep">Avançar ▸</button></div>
+
+<dialog id="lvlDlg">
+  <div class="tut-body">
+    <div class="label">Bem-vindo</div>
+    <h2>Como você quer jogar?</h2>
+    <p>É o mesmo app para todo mundo; o nível só decide quanta coisa aparece. Você pode trocar quando quiser, no seletor "Nível" do menu de seções.</p>
+    <div class="lvl-grid">
+      <button class="lvl-card" data-pick="1"><b>Casual</b><span>Só quero brincar. Poucos botões e um assessor que explica em português claro.</span></button>
+      <button class="lvl-card" data-pick="2"><b>Curioso</b><span>Gosto de economia. Previsões, monitores, choques do governo e pilotos automáticos.</span></button>
+      <button class="lvl-card" data-pick="3"><b>Economista</b><span>Quero os números: mercados, modelos, FRB/US, dados do BCB e o desafio.</span></button>
+      <button class="lvl-card" data-pick="4"><b>Pesquisador</b><span>Entendo DSGE: editor de modelos, parâmetros, momentos e calibrações.</span></button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="tut">
   <div class="tut-body">
@@ -1355,6 +1403,7 @@ function render(){
   fc=s.over?null:{hold:S.forecast(s,'hold',24,open&&!auto?parseFloat($('rate').value):null),tay:S.forecast(s,'taylor',24)};
   if(fc){$('vFcPi').textContent='em 24m: '+pct(fc.hold.pi[24])+' · Taylor '+pct(fc.tay.pi[24]);$('vFcU').textContent='em 24m: '+pct(fc.hold.u[24])+' · Taylor '+pct(fc.tay.u[24]);}
   $('lgFcBand').textContent='Meta '+fmt(T,1)+'% ± '+fmt(B,1);
+  if(window.LEVELS)LEVELS.advise(s);
   renderGov();renderLog();drawAll();
 }
 function renderLog(){
@@ -1545,9 +1594,11 @@ const VIEWS=['painel','previsao','monitores','mercados','governo','compartilhar'
 let appView='painel';
 const viewEl=id=>{const e=$(id);return e?(e.tagName==='SECTION'?e:e.closest('section')):null;};
 function sendMenu(){if(!APP||!st)return;const M=st.M,en=document.documentElement.lang==='en';
-  BR_.menu({mode:M.id,scen:cfg.scen,lang:en?'en':'pt',view:appView,
+  BR_.menu({mode:M.id,scen:cfg.scen,lang:en?'en':'pt',view:appView,level:window.LEVELS?LEVELS.get():3,
     scens:Object.keys(S.SCEN[M.id]).map(k=>({k,name:en&&window.I18N?I18N.tr(S.SCEN[M.id][k].name):S.SCEN[M.id][k].name}))});}
-function showView(id){if(!APP||VIEWS.indexOf(id)<0)return;appView=id;
+function showView(id){if(!APP||VIEWS.indexOf(id)<0)return;
+  const target=viewEl(id);if(target&&target.dataset.min&&window.LEVELS&&+target.dataset.min>LEVELS.get())id='painel'; // painel de nível maior que o escolhido
+  appView=id;
   VIEWS.forEach(v=>{const e=viewEl(v);if(e)e.hidden=v!==id;});
   document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+id));
   window.scrollTo(0,0);drawAll();drawHist(jget('bcsim-hist',[]));if(id==='pesquisa'&&window.BCRESEARCH)BCRESEARCH.redraw();if(id==='caos'&&window.CHAOSUI)CHAOSUI.redraw();sendMenu();}
@@ -1566,15 +1617,16 @@ function appInit(){
     case 'scen':$('scenSel').value=c.v;$('scenSel').dispatchEvent(new Event('change'));break;
     case 'view':showView(c.v);break;
     case 'lang':if((document.documentElement.lang==='en')!==(c.v==='en'))$('btnLang').click();break;
+    case 'level':if(window.LEVELS){LEVELS.set(+c.v);sendMenu();}break;
     case 'how':tutOpen();break;}});
   showView('painel');
 }
 
-window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg),showView,rerender:()=>{setupMode();render();renderAch();renderHist();}};
+window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg),showView,tutorial:tutOpen,rerender:()=>{setupMode();render();renderAch();renderHist();}};
 start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:false,repair:false,supply:false,diff:'n',seed:randSeed(),endless:false});
 renderAch();renderHist();showSaved();
 if(APP)appInit();
-if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
+if(pref('bcsim-tut')!=='1'&&pref('bcsim-level'))setTimeout(tutOpen,600);
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1583,6 +1635,11 @@ if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 <script src="dsge.js"></script>
 <script src="dsge-models.js"></script>
 <script src="research.js"></script>
+<script src="levels.js"></script>
+<script src="frbus.js"></script>
+<script src="frbus-model.js"></script>
+<script src="frbus-data.js"></script>
+<script src="frbus-ui.js"></script>
 <script src="chaos.js"></script>
 <script src="chaos-ui.js"></script>
 <script src="lang.js"></script>

@@ -4,12 +4,13 @@ const path = require('path');
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 let win = null;
-let data = { mode: 'BR', scen: '', scens: [], lang: 'pt', view: 'painel' };
+let data = { mode: 'BR', scen: '', scens: [], lang: 'pt', view: 'painel', level: 3 };
 
 const T = {
   pt: {
     game: 'Jogo', newg: 'Nova economia', restart: 'Reiniciar partida', step: 'Avançar um mês', auto: 'Rodar automático / pausar',
     exp: 'Exportar registro de decisões', quit: 'Sair', scen: 'Cenário', mode: 'Modo', br: 'Brasil · BCB', cl: 'Clássico',
+    level: 'Nível', levels: ['Casual', 'Curioso', 'Economista', 'Pesquisador'],
     view: 'Exibir', lang: 'Idioma', help: 'Ajuda', how: 'Como jogar', about: 'Sobre',
     zin: 'Aumentar zoom', zout: 'Diminuir zoom', z0: 'Zoom padrão', full: 'Tela cheia',
     views: { painel: 'Painel', previsao: 'Previsão', monitores: 'Monitores', mercados: 'Mercados e famílias', governo: 'Governo',
@@ -19,6 +20,7 @@ const T = {
   en: {
     game: 'Game', newg: 'New economy', restart: 'Restart game', step: 'Advance one month', auto: 'Auto-run / pause',
     exp: 'Export decision log', quit: 'Quit', scen: 'Scenario', mode: 'Mode', br: 'Brazil · BCB', cl: 'Classic',
+    level: 'Level', levels: ['Casual', 'Curious', 'Economist', 'Researcher'],
     view: 'View', lang: 'Language', help: 'Help', how: 'How to play', about: 'About',
     zin: 'Zoom in', zout: 'Zoom out', z0: 'Actual size', full: 'Full screen',
     views: { painel: 'Dashboard', previsao: 'Forecast', monitores: 'Monitors', mercados: 'Markets and households', governo: 'Government',
@@ -57,6 +59,7 @@ function buildMenu() {
       { label: t.zin, role: 'zoomIn' }, { label: t.zout, role: 'zoomOut' }, { label: t.z0, role: 'resetZoom' },
       { label: t.full, role: 'togglefullscreen' }
     ] },
+    { label: t.level, submenu: [1, 2, 3, 4].map(k => ({ label: t.levels[k - 1], type: 'radio', checked: data.level === k, accelerator: 'CmdOrCtrl+Alt+' + k, click: () => send({ a: 'level', v: k }) })) },
     { label: t.lang, submenu: [
       { label: 'Português (Brasil)', type: 'radio', checked: data.lang === 'pt', click: () => send({ a: 'lang', v: 'pt' }) },
       { label: 'English', type: 'radio', checked: data.lang === 'en', click: () => send({ a: 'lang', v: 'en' }) }
@@ -73,7 +76,7 @@ function buildMenu() {
 function createWindow() {
   win = new BrowserWindow({
     width: 1360, height: 900, minWidth: 980, minHeight: 640,
-    backgroundColor: '#f2f5f1', title: 'Simulador do Banco Central', show: false,
+    backgroundColor: '#f2f5f1', title: 'Simulador do Banco Central', show: false, icon: path.join(__dirname, 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.once('ready-to-show', () => win.show());
@@ -91,7 +94,8 @@ ipcMain.on('menu-data', (_e, d) => {
     scen: String(d.scen || ''),
     scens: Array.isArray(d.scens) ? d.scens.slice(0, 40).map(s => ({ k: String(s.k), name: String(s.name) })) : data.scens,
     lang: d.lang === 'en' ? 'en' : 'pt',
-    view: typeof d.view === 'string' ? d.view : data.view
+    view: typeof d.view === 'string' ? d.view : data.view,
+    level: [1, 2, 3, 4].indexOf(d.level) >= 0 ? d.level : data.level
   });
   buildMenu();
 });
