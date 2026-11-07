@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="pt-BR"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Simulador do Banco Central</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -232,6 +232,21 @@ dialog::backdrop{background:rgba(10,18,14,.55);backdrop-filter:blur(3px)}
   .status .wrap{grid-template-columns:repeat(2,1fr)}
   .desk{position:static;max-height:none;overflow:visible}
 }
+
+/* ===== Modo app (Electron): barra lateral, um painel por vez, sem cara de site ===== */
+html.app .mast,html.app footer,html.app .mbar{display:none!important}
+html.app body{padding-left:208px;padding-bottom:0}
+html.app .tabs{position:fixed;left:0;top:0;bottom:0;width:208px;z-index:15;border-bottom:0;border-right:1px solid var(--rule);background:var(--surface);backdrop-filter:none}
+html.app .tabs .wrap{flex-direction:column;gap:4px;padding:16px 12px;overflow:auto;height:100%;max-width:none;margin:0}
+html.app .tabs .wrap::before{content:"Simulador do Banco Central";font-family:var(--f-display);font-weight:600;font-size:1.05rem;line-height:1.2;padding:4px 8px 14px;color:var(--ink)}
+html.app .tabs a{display:block;border-radius:10px;padding:10px 12px;font-size:.9rem}
+html.app .tabs a.on{background:var(--accent);color:var(--accent-ink)}
+html.app .status{position:sticky;top:0;z-index:12}
+html.app .band-sec{padding:0}
+html.app .band-sec>.wrap{max-width:none;padding:0}
+html.app main.layout{padding-block:18px;max-width:none}
+html.app .desk{top:76px;max-height:calc(100vh - 92px)}
+html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
 </style>
 
 <header class="mast">
@@ -1110,7 +1125,7 @@ function setupMode(){
   for(const k of S.GOV_BY[M.id]){const g=S.GOV[k];const b=document.createElement('button');b.type='button';b.dataset.k=k;
     b.innerHTML='<b>'+g.name+'</b><span>'+g.desc+'</span><em>'+g.fx+'</em>';b.addEventListener('click',()=>queueGov(k,b));gb.appendChild(b);}
   $('ver').textContent=S.VERSION;
-  drawGuil();
+  drawGuil();sendMenu();
 }
 function queueGov(k,b){if(!st||st.over)return;const i=pend.gov.indexOf(k);
   if(i>=0){pend.gov.splice(i,1);}else pend.gov.push(k);renderGov();}
@@ -1395,9 +1410,42 @@ $('tutSkip').addEventListener('click',tutClose);
 $('btnHow').addEventListener('click',tutOpen);
 $('mbStep').addEventListener('click',advance);
 
-window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg),rerender:()=>{setupMode();render();renderAch();renderHist();}};
+/* ---------- modo app (Electron): menu nativo + um painel por vez ---------- */
+const APP=!!window.appBridge||/[?&]app=1\b/.test(location.search);
+const BR_=window.appBridge||{menu(){},onCommand(){}};
+const VIEWS=['painel','previsao','monitores','mercados','governo','compartilhar','historico','ranking','diario'];
+let appView='painel';
+const viewEl=id=>{const e=$(id);return e?(e.tagName==='SECTION'?e:e.closest('section')):null;};
+function sendMenu(){if(!APP||!st)return;const M=st.M,en=document.documentElement.lang==='en';
+  BR_.menu({mode:M.id,scen:cfg.scen,lang:en?'en':'pt',view:appView,
+    scens:Object.keys(S.SCEN[M.id]).map(k=>({k,name:en&&window.I18N?I18N.tr(S.SCEN[M.id][k].name):S.SCEN[M.id][k].name}))});}
+function showView(id){if(!APP||VIEWS.indexOf(id)<0)return;appView=id;
+  VIEWS.forEach(v=>{const e=viewEl(v);if(e)e.hidden=v!==id;});
+  document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+id));
+  window.scrollTo(0,0);drawAll();drawHist(jget('bcsim-hist',[]));sendMenu();}
+function appInit(){
+  document.documentElement.classList.add('app');
+  const col=document.querySelector('main.layout > div');
+  document.querySelectorAll('.band-sec').forEach(s=>col.appendChild(s));
+  document.querySelectorAll('.tabs a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showView(a.getAttribute('href').slice(1));}));
+  BR_.onCommand(c=>{switch(c.a){
+    case 'new':$('btnNew').click();break;
+    case 'restart':$('btnRestart').click();break;
+    case 'step':advance();break;
+    case 'auto':$('btnAuto').click();break;
+    case 'export':$('btnExport').click();showView('compartilhar');break;
+    case 'mode':$(c.v==='CL'?'modeCL':'modeBR').click();break;
+    case 'scen':$('scenSel').value=c.v;$('scenSel').dispatchEvent(new Event('change'));break;
+    case 'view':showView(c.v);break;
+    case 'lang':if((document.documentElement.lang==='en')!==(c.v==='en'))$('btnLang').click();break;
+    case 'how':tutOpen();break;}});
+  showView('painel');
+}
+
+window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg),showView,rerender:()=>{setupMode();render();renderAch();renderHist();}};
 start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:false,repair:false,supply:false,diff:'n',seed:randSeed(),endless:false});
 renderAch();renderHist();showSaved();
+if(APP)appInit();
 if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 })();
 </script>

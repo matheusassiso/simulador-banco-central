@@ -1,2 +1,7 @@
 .claude-flow/
 .claude-flow/
+node_modules/
+dist/
+[INFO] Recording command outcome: printf
+
+[OK] Command outcome recorded

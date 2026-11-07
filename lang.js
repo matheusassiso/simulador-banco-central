@@ -221,7 +221,7 @@ window.I18N={tr,EN};
 
 const $=id=>document.getElementById(id);
 let lang='pt',busy=false;
-try{lang=localStorage.getItem('bcsim-lang')||((navigator.language||'pt').toLowerCase().startsWith('pt')?'pt':'en');}catch(e){}
+try{lang=localStorage.getItem('bcsim-lang')==='en'?'en':'pt';}catch(e){} // padrão: português do Brasil
 
 function textNode(n){
   const p=n.parentNode;if(!p||/^(SCRIPT|STYLE|TITLE)$/.test(p.nodeName))return;
@@ -259,6 +259,7 @@ const obs=new MutationObserver(recs=>{
 });
 function setLang(l){
   lang=l;try{localStorage.setItem('bcsim-lang',l);}catch(e){}
+  document.documentElement.lang=l==='en'?'en':'pt-BR';
   if(window.SIM&&SIM.setLocale)SIM.setLocale(l==='en'?'en-US':'pt-BR');
   if(window.BCSIM&&BCSIM.rerender)BCSIM.rerender();
   apply();
