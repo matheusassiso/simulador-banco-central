@@ -43,3 +43,12 @@ Opções (só em modelos com setor financeiro): ciclo de crédito, ciclo de cré
 Também: previsão da equipe de 24 meses, famílias e empresas, condições financeiras extras, repetição contrafactual no painel e estatística de 3 anos nos monitores.
 
 Implementação própria, inspirada nas ideias de simuladores de política monetária; não usa código de terceiros.
+
+## v3
+
+- 10 novos cenarios: Brasil (Plano Real 1994, crise de 2002, crise global de 2008, taper tantrum 2013-15, greve dos caminhoneiros e Previdencia 2018-19) e Classico (Volcker, Japao dos anos 1990, divida europeia 2011, inflacao pos-pandemia, fuga de capitais).
+- Niveis de dificuldade (facil, normal, dificil) que escalam choques; entram no codigo da partida.
+- Conquistas, historico das partidas com grafico e salvar/continuar partida (tudo no navegador).
+- Tutorial na primeira visita e botao "Como jogar".
+- Barra fixa "Avancar" no celular.
+- Ingles (botao EN/PT): `lang.js` traduz a interface e os eventos do diario; frases novas sem traducao ficam em portugues.
