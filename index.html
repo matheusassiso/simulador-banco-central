@@ -242,7 +242,7 @@ dialog::backdrop{background:rgba(10,18,14,.55);backdrop-filter:blur(3px)}
       <h1>Simulador do Banco Central</h1>
       <p id="tagline">Leve o IPCA à meta de 3% sem sacrificar o emprego. A Selic leva meses para agir.</p>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="btnHow">Como jogar</button>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="btnHow">Como jogar</button><button class="btn" id="btnLang" aria-label="Idioma / Language" title="Idioma / Language">EN</button>
     <div class="seg" role="group" aria-label="Versão do jogo">
       <button id="modeBR" aria-pressed="true">Brasil · BCB</button>
       <button id="modeCL" aria-pressed="false">Clássico</button>
@@ -620,7 +620,8 @@ const MODES={
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function mulberry(seed){let a=seed>>>0;return function(){a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function gauss(r){const u=Math.max(r(),1e-9),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
-const fmt=(x,d)=>x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+let LOC='pt-BR';const setLocale=l=>{LOC=l;};
+const fmt=(x,d)=>x.toLocaleString(LOC,{minimumFractionDigits:d,maximumFractionDigits:d});
 
 function set(s,o){Object.assign(s,o);}
 function addImp(s,amt,months){s.impQ.push({amt,left:months});}
@@ -1045,7 +1046,7 @@ function forecast(s,policy,n,iNow){
   return {pi,u};
 }
 
-return {OFF,VERSION,MESES,MODES,MODELS,OPTS,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,forecast,ACH,achievements,fmt};
+return {OFF,VERSION,MESES,MODES,MODELS,OPTS,SCEN,GOV,GOV_BY,newState,step,score,rateOpen,nextCopom,taylor,ngdp,encode,decode,packDec,unpackDec,simulate,forecast,ACH,achievements,fmt,setLocale};
 })();
 </script>
 
@@ -1240,7 +1241,7 @@ function chart(id,o){
   for(let v=lo;v<=hi+1e-9;v+=stp){const y=Math.round(Y(v))+.5;c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();
     c.fillText((Math.abs(stp)<1?fmt(v,1):fmt(v,0)),L-5,y);}
   c.textAlign='center';c.textBaseline='top';const ys=o.fc?6:xmax>150?24:12;
-  for(let m=0;m<=xmax;m+=ys){const x=X(m);c.fillText(o.fc?'+'+m+'m':'A'+(m/12+1),Math.min(Math.max(x,L+10),W-R-10),Hh-B+5);}
+  for(let m=0;m<=xmax;m+=ys){const x=X(m);c.fillText(o.fc?'+'+m+'m':(document.documentElement.lang==='en'?'Y':'A')+(m/12+1),Math.min(Math.max(x,L+10),W-R-10),Hh-B+5);}
   if(o.band){c.fillStyle=col('--band');c.fillRect(L,Y(o.band[1]),pw,Y(o.band[0])-Y(o.band[1]));}
   if(o.zero&&lo<0&&hi>0){c.strokeStyle=col('--muted');c.setLineDash([]);c.beginPath();c.moveTo(L,Y(0));c.lineTo(W-R,Y(0));c.stroke();}
   (o.hl||[]).forEach(h=>{c.strokeStyle=col(h.c);c.setLineDash([3,3]);c.beginPath();c.moveTo(L,Y(h.v));c.lineTo(W-R,Y(h.v));c.stroke();c.setLineDash([]);});
@@ -1394,7 +1395,7 @@ $('tutSkip').addEventListener('click',tutClose);
 $('btnHow').addEventListener('click',tutOpen);
 $('mbStep').addEventListener('click',advance);
 
-window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg)};
+window.BCSIM={game:()=>({cfg,st}),code:()=>S.encode(cfg),rerender:()=>{setupMode();render();renderAch();renderHist();}};
 start({mode:m0,scen:m0==='BR'?'h25':'calm',model:'R',credit:false,repair:false,supply:false,diff:'n',seed:randSeed(),endless:false});
 renderAch();renderHist();showSaved();
 if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
@@ -1403,4 +1404,5 @@ if(pref('bcsim-tut')!=='1')setTimeout(tutOpen,600);
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="platform.js"></script>
+<script src="lang.js"></script>
 </body></html>
