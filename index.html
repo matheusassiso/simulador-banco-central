@@ -412,6 +412,7 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
         <button class="step" id="rateUp" aria-label="Aumentar 0,25 ponto">+</button>
       </div>
       <input type="range" id="rate" min="2" max="30" step="0.25" value="15" aria-label="Taxa básica de juros">
+      <label class="hint" style="display:flex;gap:8px;align-items:center;margin-top:6px">ou digite qualquer taxa (%) <input id="rateNum" type="number" min="0" max="100000" step="0.25" style="width:9em"></label>
       <div class="ticks" id="rateTicks"></div>
       <p class="hint" id="rateHint"></p>
     </div>
@@ -803,9 +804,9 @@ var SIM = (function(){
 const OFF=12, VERSION='2.0';
 const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const MODES={
-  BR:{id:'BR',bank:'Banco Central do Brasil',rate:'Selic',cpi:'IPCA',target:3,band:1.5,ustar:6.5,rstar:5,gpot:2,iMin:2,iMax:30,term:96,tp0:2,inertia:0.3,fx:true,
+  BR:{id:'BR',bank:'Banco Central do Brasil',rate:'Selic',cpi:'IPCA',target:3,band:1.5,ustar:6.5,rstar:5,gpot:2,iMin:2,iMax:100000,term:96,tp0:2,inertia:0.3,fx:true,iSoft:30,
       copom:[0,2,3,5,6,8,10,11],printSd:1.3,realCap:11,govStep:2,cur:'R$'},
-  CL:{id:'CL',bank:'Banco Central',rate:'Juro básico',cpi:'Inflação',target:2,band:1,ustar:4.5,rstar:0.5,gpot:2,iMin:0,iMax:20,term:120,tp0:1,inertia:0.1,fx:false,
+  CL:{id:'CL',bank:'Banco Central',rate:'Juro básico',cpi:'Inflação',target:2,band:1,ustar:4.5,rstar:0.5,gpot:2,iMin:0,iMax:100000,iSoft:20,term:120,tp0:1,inertia:0.1,fx:false,
       copom:null,printSd:1.1,realCap:8,govStep:1.25,cur:'$'}
 };
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -1073,7 +1074,7 @@ function step(s,d){
   if(s.cfg.supply)cCr-=0.25*Math.max(0,s.ess)*(s.hhShare-0.5);
   const cOth=1.4*s.ed+s.dem+(M.fx?0.02*s.depS:0)+cCr;
   s.contrib={pol:cPol,mkt:cMkt,cred:cCred,fis:cFis,oth:cOth};
-  s.y+=0.09*(cPol+cMkt+cCred+cFis+cOth-s.y);
+  s.y=clamp(s.y+0.09*(cPol+cMkt+cCred+cFis+cOth-s.y),-95,100); // teto/piso só para juros extremos (hiperinflação)
 
   // oferta: potencial, cicatrizes
   const gp=s.gpot-(s.laborM>0?0.6:0)+(s.gpotBoost>0?0.5:0);
@@ -1260,7 +1261,7 @@ function start(c,replayDecs){
   if(replayDecs){for(const a of replayDecs){if(st.over)break;const d=S.unpackDec(a);st.dec.push(a);S.step(st,d);}
     const last=replayDecs[replayDecs.length-1]; if(last){const d=S.unpackDec(last);$('qe').value=Math.round(d.qe*100);$('fElf').checked=d.elf;$('fCcyb').checked=d.ccyb;}}
   else{$('qe').value=0;$('fElf').checked=false;$('fCcyb').checked=false;}
-  setupMode(); $('rate').value=st.i; render();
+  setupMode(); setRate(st.i); render();
 }
 function optFlags(){const model=$('modelSel').value||'R',fin=S.MODELS[model].fin,o=fin?$('optSel').value:'';
   return {model,credit:o.includes('c'),repair:o.includes('b'),supply:o.includes('s'),diff:$('diffSel').value||'n'};}
@@ -1273,8 +1274,7 @@ function setupMode(){
   $('tagline').textContent=BR?'Leve o IPCA à meta de 3% sem sacrificar o emprego. A Selic leva meses para agir.':'Leve a inflação a 2% com pleno emprego. Cuidado com as defasagens.';
   $('deskTitle').textContent=BR?'Reunião do Copom':'Mesa de política';
   $('rateLabel').textContent=BR?'Meta da taxa Selic':'Taxa básica de juros';
-  const r=$('rate');r.min=M.iMin;r.max=M.iMax;
-  const tk=BR?[2,9,16,23,30]:[0,5,10,15,20];$('rateTicks').innerHTML=tk.map(v=>'<span>'+v+'%</span>').join('');
+  setRate(parseFloat($('rate').value)||st.i);
   $('tInf').textContent=(BR?'IPCA':'Inflação')+' (3 meses anualizada)';
   $('lgExp').textContent=BR?'Expectativa (Focus)':'Expectativa';
   $('lgBand').textContent='Meta '+fmt(M.target,1)+'% ± '+fmt(M.band,1);
@@ -1303,6 +1303,15 @@ function setupMode(){
   $('ver').textContent=S.VERSION;
   drawGuil();sendMenu();
 }
+/* faixa de juros expansível: a escala do controle cresce conforme a taxa; o teto real do modelo é 100.000% */
+function setRate(v){
+  const M=st.M,r=$('rate');v=Math.min(M.iMax,Math.max(M.iMin,Number.isFinite(v)?v:st.i));
+  let mx=M.iSoft;while(mx<v/0.97)mx*=2; // dobra a escala até a taxa caber
+  r.min=M.iMin;r.max=mx;r.step=mx>200?1:0.25;r.value=v;
+  const u=M.iMin,n=4,tk=[];for(let k=0;k<=n;k++)tk.push(Math.round(u+(mx-u)*k/n));
+  $('rateTicks').innerHTML=tk.map(x=>'<span>'+x.toLocaleString('pt-BR')+'%</span>').join('');
+  $('rateNum').value=v;$('rateBig').textContent=fmt(v,2)+'%';
+}
 function queueGov(k,b){if(!st||st.over)return;const i=pend.gov.indexOf(k);
   if(i>=0){pend.gov.splice(i,1);}else pend.gov.push(k);renderGov();}
 function renderGov(){document.querySelectorAll('#govBox button').forEach(b=>{const on=pend.gov.indexOf(b.dataset.k)>=0;
@@ -1319,7 +1328,7 @@ function currentDecision(){
 function advance(){
   if(!st||st.over){stopAuto();return;}
   const d=currentDecision();st.dec.push(S.packDec(d));S.step(st,d);pend={g:null,gov:[]};
-  $('rate').value=st.i;render();
+  setRate(st.i);render();
   checkAch();
   if(st.over){stopAuto();recordHist();try{localStorage.removeItem('bcsim-save');}catch(e){}window.dispatchEvent(new Event('bcsim-over'));}
   else saveGame();
@@ -1358,7 +1367,7 @@ function render(){
   const lock=!open||auto||!!s.over;
   $('rate').disabled=lock;$('rateUp').disabled=lock;$('rateDown').disabled=lock;
   $('rateBig').textContent=fmt(parseFloat($('rate').value),2)+'%';
-  $('rateHint').textContent=s.over?'Partida encerrada.':auto?'O piloto automático decide os juros ao avançar.':!open?'A Selic só muda nas reuniões do Copom. Avance até a próxima.':'Neutro hoje: '+fmt(s.rstar+s.piE,2)+'% (juro real neutro '+fmt(s.rstar,1)+'% + expectativa '+fmt(s.piE,1)+'%).';
+  $('rateHint').textContent=s.over?'Partida encerrada.':auto?'O piloto automático decide os juros ao avançar.':!open?'A Selic só muda nas reuniões do Copom. Avance até a próxima.':'Neutro hoje: '+fmt(s.rstar+s.piE,2)+'% (juro real neutro '+fmt(s.rstar,1)+'% + expectativa '+fmt(s.piE,1)+'%).'+(parseFloat($('rate').value)>s.M.iSoft?' Acima de '+s.M.iSoft+'% o modelo é extrapolado; para hiperinflação de verdade, use o Laboratório do Caos.':'');
   const q=parseInt($('qe').value,10);$('qeVal').textContent=q===0?'Neutro':(q>0?'QE ':'QT ')+Math.abs(q)+'%';
   $('btnStep').disabled=!!s.over;
   $('mbStep').disabled=!!s.over;$('mbMonth').textContent=mon+' · A'+yr;$('mbRate').textContent=fmt(s.i,2)+'%';$('mbRateL').textContent=BR?'Selic':'Juro';
@@ -1499,9 +1508,11 @@ function copy(text,ok){if(navigator.clipboard&&navigator.clipboard.writeText){na
 /* ---------- eventos ---------- */
 $('modeBR').addEventListener('click',()=>{if(st.M.id!=='BR'){pref('bcsim-mode','BR');start(newCfg('BR','h25'));}});
 $('modeCL').addEventListener('click',()=>{if(st.M.id!=='CL'){pref('bcsim-mode','CL');start(newCfg('CL','calm'));}});
-$('rate').addEventListener('input',()=>{$('rateBig').textContent=fmt(parseFloat($('rate').value),2)+'%';});
-$('rateUp').addEventListener('click',()=>{const r=$('rate');r.value=Math.min(+r.max,+r.value+0.25);r.dispatchEvent(new Event('input'));});
-$('rateDown').addEventListener('click',()=>{const r=$('rate');r.value=Math.max(+r.min,+r.value-0.25);r.dispatchEvent(new Event('input'));});
+const rStep=()=>{const v=parseFloat($('rate').value);return v>=1000?100:v>=200?10:v>=60?1:0.25;};
+$('rate').addEventListener('input',()=>{setRate(parseFloat($('rate').value));render();});
+$('rateNum').addEventListener('change',()=>{setRate(parseFloat($('rateNum').value));render();});
+$('rateUp').addEventListener('click',()=>{setRate(parseFloat($('rate').value)+rStep());render();});
+$('rateDown').addEventListener('click',()=>{setRate(parseFloat($('rate').value)-rStep());render();});
 $('qe').addEventListener('input',()=>{const q=parseInt($('qe').value,10);$('qeVal').textContent=q===0?'Neutro':(q>0?'QE ':'QT ')+Math.abs(q)+'%';});
 $('btnStep').addEventListener('click',advance);
 $('btnAuto').addEventListener('click',()=>timer?stopAuto():startAuto());
