@@ -1,0 +1,7 @@
+{
+  "appId": "br.com.bcsim.simulador",
+  "appName": "Banco Central",
+  "webDir": "www",
+  "backgroundColor": "#f3f5f1",
+  "android": { "allowMixedContent": false }
+}

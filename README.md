@@ -54,6 +54,11 @@ Implementação própria, inspirada nas ideias de simuladores de política monet
 
 O jogo tambem roda como app do Windows, offline, com janela e menu nativos (Jogo, Modo, Cenario, Exibir, Idioma, Ajuda) e barra lateral com um painel por vez.
 
+### Android
+
+`downloads/Simulador-do-Banco-Central-3.2.0.apk` (4 MB, assinado com a chave de depuracao): baixe no celular e instale permitindo "instalar apps desconhecidos" para o navegador. Funciona offline. O site tambem e um PWA (menu do Chrome, "Instalar app").
+Para gerar de novo: `cd mobile && npm install && npm run apk` (precisa de JDK 17 e Android SDK 34/35; o APK sai em `mobile/android/app/build/outputs/apk/debug/`).
+
 - Rodar em desenvolvimento: `npm install` e `npm run app`.
 - Gerar o executavel portatil: `npm run dist` (saida em `dist/`, sem precisar instalar).
 - Teste de fumaca: `SMOKE_OUT=smoke npx electron app/smoke.js`.
