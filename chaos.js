@@ -38,7 +38,7 @@ function newSim(key, over) {
   const p = PARAMS(); if (pr.params) Object.assign(p, pr.params);
   const s = {
     t: 0, lnP: 0, lnM: 0, lnE: 0, lnQ: pr.lnQ || 0, l: pr.l, le: pr.l, cred: 0, credPlan: 0, y: pr.y, b: pr.b, R: pr.R, D: 0, zeros: 0, cur: pr.cur,
-    freeze: { on: false, left: 0, rigor: 0, boom: 0 }, urv: { on: false, left: 0, k: 3, name: 'Real' }, peg: { on: false, crawl: 0 },
+    dforced: 0, freeze: { on: false, left: 0, rigor: 0, boom: 0 }, urv: { on: false, left: 0, k: 3, name: 'Real' }, peg: { on: false, crawl: 0 },
     blocked: { left: 0, lnPer: -Infinity }, catchup: 0, shortage: 0, agio: 0, mPrev: 0
   };
   // começa em equilíbrio de saldos: M/P = demanda de moeda
@@ -79,7 +79,22 @@ function event(sim, name, a) {
     case 'peg': s.peg = { on: true, crawl: clamp(fin(a.crawl, 0.003), -0.05, 5) }; s.R = Math.max(s.R, fin(a.reserves, 2)); s.credPlan = Math.max(s.credPlan, 0.6);
       note(sim, 'Âncora cambial: câmbio fixado (rastejando ' + (s.peg.crawl * 100).toFixed(1) + '% ao mês), reservas de ' + s.R.toFixed(1) + ' meses de PIB.', 'ev'); break;
     case 'unpeg': if (s.peg.on) { s.peg.on = false; note(sim, 'Câmbio solto.', 'ev'); } break;
-    case 'dollarize': { s.credPlan = 0; s.cred = 0; note(sim, 'Dolarização forçada ainda não existe neste modelo; use a âncora cambial e as reservas.', ''); break; }
+    case 'undollarize': { // volta à moeda própria: o banco central recompõe a base vendendo moeda por dólares (reservas sobem)
+      if (!s.dforced) { note(sim, 'Não há dolarização forçada para desfazer.', ''); break; }
+      const le = clamp(s.le, -0.05, 40), Dsp = clamp(1 - Math.exp(-p.dolar * Math.max(0, le)), 0, 0.95);
+      const mdNew = Math.max(p.mfloor, p.m0 * Math.exp(-p.alpha * Math.max(le, -0.05)) * s.y * (1 - Dsp)), m = Math.exp(clamp(s.lnM - s.lnP, -60, 60)), add = Math.max(0, mdNew - m);
+      s.lnM = Math.log(Math.exp(clamp(s.lnM, -650, 650)) + add * Math.exp(clamp(s.lnP, -650, 650))); s.R += add; s.dforced = 0; s.credPlan = 0; s.cred = 0;
+      note(sim, 'Desdolarização: a moeda própria volta e o governo recupera o direito de emitir. A confiança some até a política provar que não vai imprimir.', 'alert'); break;
+    }
+    case 'dollarize': { // troca a base por dólares ao câmbio vigente, pagando com as reservas; o governo perde a senhoriagem
+      const want = clamp(fin(a.share, 1), 0, 0.95), m = Math.exp(clamp(s.lnM - s.lnP, -60, 60));
+      if (want <= s.dforced) { note(sim, 'Já está pelo menos ' + Math.round(s.dforced * 100) + '% dolarizado.', ''); break; }
+      const delta = (want - s.dforced) / (1 - s.dforced), cost = delta * m; let eff = want;
+      if (cost > s.R) { const dl = m > 0 ? Math.max(0, s.R) / m : 0; eff = s.dforced + dl * (1 - s.dforced); }
+      const dEff = (eff - s.dforced) / (1 - s.dforced); s.R = Math.max(0, s.R - dEff * m); s.lnM += Math.log(Math.max(1e-12, 1 - dEff)); s.dforced = eff;
+      s.credPlan = Math.max(s.credPlan, 0.5 + 0.4 * eff);
+      note(sim, eff + 1e-9 < want ? 'Reservas insuficientes: só deu para dolarizar ' + Math.round(eff * 100) + '% (queria ' + Math.round(want * 100) + '%).' : 'Dolarização de ' + Math.round(eff * 100) + '% da base, paga com reservas. O governo perde a senhoriagem: déficit agora só se financia com dívida ou ajuste.', eff + 1e-9 < want ? 'alert' : 'ev'); break;
+    }
   }
 }
 
@@ -91,12 +106,13 @@ function step(sim, c) {
   // expectativas: adaptativas, ancoradas pela credibilidade
   const target = s.peg.on ? s.peg.crawl : 0;
   let le = s.le + p.theta * (s.l - s.le); le = (1 - s.cred) * le + s.cred * target; le = clamp(le, -0.05, 40);
-  const D = clamp(1 - Math.exp(-p.dolar * Math.max(0, le)), 0, 0.95);
+  const D = clamp(Math.max(1 - Math.exp(-p.dolar * Math.max(0, le)), s.dforced), 0, 0.95); // dolarização espontânea ou forçada
   const md = Math.max(p.mfloor, p.m0 * Math.exp(-p.alpha * Math.max(le, -0.05)) / (1 + p.ki * i) * s.y * (1 - D));
-  // emissão: manual (μ) ou monetizando o déficit (incluindo juros da dívida)
+  // emissão: manual (μ) ou monetizando o déficit (incluindo juros da dívida). Com dolarização o governo imprime só o que sobrou de moeda.
+  const prn = Math.pow(1 - s.dforced, 4); // dolarizado, o banco central praticamente perde a capacidade de emitir
   let lnM1;
-  if (c.mode === 'deficit') { const need = Math.max(0, d + ((1 + i) / Math.exp(le) - 1) * s.b); lnM1 = lnM0 + Math.log(1 + need * Math.exp(clamp(lnP0 + le - lnM0, -60, 60))); }
-  else lnM1 = lnM0 + Math.log(1 + mu);
+  if (c.mode === 'deficit') { const need = prn * Math.max(0, d + ((1 + i) / Math.exp(le) - 1) * s.b); lnM1 = lnM0 + Math.log(1 + need * Math.exp(clamp(lnP0 + le - lnM0, -60, 60))); }
+  else lnM1 = lnM0 + Math.log(1 + prn * mu);
   lnM1 = Math.min(lnM1, lnM0 + 44); // a gráfica não imprime mais do que os preços conseguem acompanhar em um mês (e^45)
   if (s.blocked.left > 0) { lnM1 = Math.log(Math.exp(clamp(lnM1, -700, 700)) + Math.exp(clamp(s.blocked.lnPer, -700, 700))); s.blocked.left--; }
   // preço de equilíbrio do mercado de moeda e ajuste parcial
@@ -157,6 +173,7 @@ function step(sim, c) {
   rec.okLaffer = Number.isFinite(rec.S2) && rec.S2 > rec.l2;
   if (l > Math.log(1.5) && !sim._hyper) { sim._hyper = true; note(sim, 'Hiperinflação (mais de 50% ao mês).', 'alert'); }
   if (l < Math.log(1.5) * 0.5 && sim._hyper) { sim._hyper = false; note(sim, 'Saiu da hiperinflação.', 'good'); }
+  if (l >= 44.9 && !sim._ceil) { sim._ceil = true; note(sim, 'A inflação encostou no teto numérico do modelo (e^45 ao mês): daqui em diante os números deixam de ser informativos. Troque de moeda ou dolarize.', 'alert'); }
   if (m <= p.mfloor * 1.5 && !sim._dead) { sim._dead = true; note(sim, 'Os saldos reais chegaram ao piso: ninguém quer a moeda. Hora de trocar de moeda ou ancorar.', 'alert'); }
   return rec;
 }

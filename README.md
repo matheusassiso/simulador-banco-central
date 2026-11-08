@@ -54,6 +54,11 @@ Implementação própria, inspirada nas ideias de simuladores de política monet
 
 O jogo tambem roda como app do Windows, offline, com janela e menu nativos (Jogo, Modo, Cenario, Exibir, Idioma, Ajuda) e barra lateral com um painel por vez.
 
+### Android
+
+`downloads/Simulador-do-Banco-Central-3.2.0.apk` (4 MB, assinado com a chave de depuracao): baixe no celular e instale permitindo "instalar apps desconhecidos" para o navegador. Funciona offline. O site tambem e um PWA (menu do Chrome, "Instalar app").
+Para gerar de novo: `cd mobile && npm install && npm run apk` (precisa de JDK 17 e Android SDK 34/35; o APK sai em `mobile/android/app/build/outputs/apk/debug/`).
+
 - Rodar em desenvolvimento: `npm install` e `npm run app`.
 - Gerar o executavel portatil: `npm run dist` (saida em `dist/`, sem precisar instalar).
 - Teste de fumaca: `SMOKE_OUT=smoke npx electron app/smoke.js`.
@@ -80,3 +85,10 @@ Painel "Caos" (site e app): hiperinflacao sem tetos. Juros, deficit e emissao ac
 ### TANK
 
 Modelo de dois agentes (Debortoli e Gali, 2018): `tank_notr`, `tank_const` e `tank_rank` no painel Pesquisa, com comparacao dos tres regimes fiscais, lambda editavel e duas calibracoes da curva de Phillips. Testes: `node test/dsge.test.js` (25).
+
+### FRB/US, dolarizacao e niveis de uso
+
+- **FRB/US em JavaScript** (`frbus.js`, `frbus-model.js`, `frbus-data.js`, `frbus-ui.js`): as 284 equacoes do modelo do Federal Reserve (dominio publico, expectativas VAR), com fatores de ajuste que replicam o cenario base e Newton com Jacobiano esparso. Bate com o pyfrbus oficial a 8e-7 (10 variaveis, 24 trimestres, 0,7 s). Teste: `node test/frbus.test.js`. Os arquivos de modelo e dados sao gerados por `tools/frbus_export.py`.
+- **Dolarizacao forcada** no Laboratorio do Caos: troca a base por dolares com as reservas e o governo perde a senhoriagem.
+- **Niveis de uso** (`levels.js`): Casual, Curioso, Economista e Pesquisador. Mesmo app, revelacao progressiva; o Casual ganha um assessor em portugues claro. O seletor fica no menu de secoes e no menu Nivel do app.
+- **Icone proprio** do app (`tools/make_icon.js`).
