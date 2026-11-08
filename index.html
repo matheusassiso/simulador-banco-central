@@ -289,6 +289,7 @@ html.app section[id],html.app div[id=painel]{scroll-margin-top:0}
     <div class="cell"><span class="label">Mês</span><span class="v" id="stMonth">—</span></div>
     <div class="cell"><span class="label">Mandato</span><span class="v" id="stProg">—</span><div class="bar"><i id="stBar"></i></div></div>
     <div class="cell"><span class="label">Pontuação de estabilidade</span><span class="v" id="stScore">—</span></div>
+    <div class="cell"><span class="label">Pressão pelo cargo</span><span class="v" id="stPress">—</span><div class="bar"><i id="stPBar"></i></div></div>
     <div class="cell"><span class="label">Mandato · preços</span><span class="chip" id="stPrice">—</span></div>
     <div class="cell"><span class="label">Mandato · emprego</span><span class="chip" id="stEmp">—</span></div>
     <div class="cell"><span class="label">Desejável · crescimento</span><span class="chip" id="stGrow">—</span></div>
@@ -1176,6 +1177,13 @@ function step(s,d){
     const avg=score(s);
     if(M.fx&&s.m===48){ if(avg>=50||s.C>=0.4){s.reconduzido=true;log(s,'Fim do primeiro mandato. O presidente da República o reconduz e o Senado aprova. Mais 4 anos.','good');}
       else s.over={t:'Não reconduzido',x:'Com '+fmt(avg,0)+' pontos de média e credibilidade de '+fmt(s.C*100,0)+'%, o Senado rejeitou sua recondução. Era preciso 50 pontos ou 40% de credibilidade.'};}
+    // pressão por mau desempenho: sobe quando a nota do mês fica abaixo de 42 e desce quando fica acima; 100 = demissão
+    if(s.pressure==null){s.pressure=25;s.pWarn=0;}
+    if(s.m>6){s.pressure=clamp(s.pressure+(42-s.mscore)/18,0,100);
+      if(s.pressure>=80&&s.pWarn<2){s.pWarn=2;log(s,'Ultimato: o presidente da República avisa que sua permanência depende de resultados imediatos.','alert');}
+      else if(s.pressure>=60&&s.pWarn<1){s.pWarn=1;log(s,'O ministro da Fazenda e o Congresso cobram resultados: sua permanência está em questão.','alert');}
+      if(s.pressure<50)s.pWarn=0;
+      if(s.pressure>=100&&!s.over) s.over={t:'Demitido por mau desempenho',x:'Meses seguidos de resultados ruins esgotaram a paciência do governo. Com '+fmt(avg,0)+' pontos de média, você é exonerado.'};}
     s.lowC=s.C<0.08?(s.lowC||0)+1:0;
     if(s.lowC>=12) s.over={t:'Pressão insustentável',x:'Um ano inteiro com credibilidade abaixo de 8%. Você deixa o cargo.'};
     s.hiRun=s.piYoY>(M.fx?15:12)?s.hiRun+1:0;
@@ -1346,6 +1354,9 @@ function render(){
   const term=s.cfg.endless?null:M.term;
   $('stProg').textContent=s.m+(term?' / '+term:' · sem fim');$('stBar').style.width=term?Math.min(100,100*s.m/term)+'%':'100%';
   $('stScore').textContent=s.scoreN?fmt(S.score(s),0)+' pts':'0 pts';
+  const pr=s.pressure==null?25:s.pressure;
+  $('stPress').textContent=s.cfg.endless?'—':pr<40?'Baixa':pr<60?'Moderada':pr<80?'Alta':'Crítica';$('stPBar').style.width=s.cfg.endless?'0%':Math.round(pr)+'%';
+  $('stPBar').style.background=pr<40?'':pr<60?'var(--gold)':'var(--bad,#b3402a)';
   const dpi=s.piYoY-T;
   if(Math.abs(dpi)<=0.5)chip($('stPrice'),'Na meta','good');
   else if(Math.abs(dpi)<=B)chip($('stPrice'),dpi>0?'Acima do centro, na banda':'Abaixo do centro, na banda','warn');
